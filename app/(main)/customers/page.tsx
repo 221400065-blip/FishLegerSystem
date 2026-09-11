@@ -2,21 +2,22 @@
 import { useLanguage } from "@/lib/LanguageContext";
 
 import { useState } from "react";
-import { Search, Plus, Edit, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Plus, Edit, Trash2, ChevronLeft, ChevronRight, DollarSign, Users, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 
 const allCustomers = [
-  { id: "C-001", name: "Ahmed Khan", phone: "+92 300 1234567", orders: 45, spent: 12450.00, commission: 8, status: "Active" },
-  { id: "C-002", name: "Ali Raza", phone: "+92 321 7654321", orders: 12, spent: 3800.00, commission: 5, status: "Active" },
-  { id: "C-003", name: "Zara Malik", phone: "+92 333 9876543", orders: 89, spent: 45600.00, commission: 10, status: "Active" },
-  { id: "C-004", name: "Sana Hussain", phone: "+92 345 1122334", orders: 2, spent: 150.00, commission: 0, status: "Inactive" },
-  { id: "C-005", name: "Bilal Ahmed", phone: "+92 300 5566778", orders: 34, spent: 8900.00, commission: 7, status: "Active" },
-  { id: "C-006", name: "Nadia Shah", phone: "+92 311 9988776", orders: 5, spent: 620.00, commission: 2, status: "Inactive" },
+  { id: "C-001", name: "Ahmed Khan", phone: "+92 300 1234567", billed: 12450.00, paid: 10000.00, status: "Active" },
+  { id: "C-002", name: "Ali Raza", phone: "+92 321 7654321", billed: 3800.00, paid: 3800.00, status: "Active" },
+  { id: "C-003", name: "Zara Malik", phone: "+92 333 9876543", billed: 45600.00, paid: 40000.00, status: "Active" },
+  { id: "C-004", name: "Sana Hussain", phone: "+92 345 1122334", billed: 150.00, paid: 0.00, status: "Inactive" },
+  { id: "C-005", name: "Bilal Ahmed", phone: "+92 300 5566778", billed: 8900.00, paid: 8900.00, status: "Active" },
+  { id: "C-006", name: "Nadia Shah", phone: "+92 311 9988776", billed: 620.00, paid: 500.00, status: "Inactive" },
 ];
 
 export default function CustomersPage() {
@@ -31,6 +32,11 @@ export default function CustomersPage() {
     const matchesSearch = customer.name.toLowerCase().includes(searchQuery.toLowerCase()) || customer.id.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesTab && matchesSearch;
   });
+
+  const totalRevenue = filteredCustomers.reduce((sum, c) => sum + c.billed, 0);
+  const totalActive = filteredCustomers.filter(c => c.status === "Active").length;
+  const totalOutstanding = filteredCustomers.reduce((sum, c) => sum + (c.billed - c.paid), 0); 
+
 
   return (
     <div className="space-y-6">
@@ -49,6 +55,51 @@ export default function CustomersPage() {
             <Plus size={18} className="mr-2" /> Add New Customer
           </Button>
         </div>
+      </div>
+
+      {/* Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="rounded-xl shadow-sm border-slate-200">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-slate-500">Total Customer Revenue</p>
+                <h2 className="text-3xl font-bold text-slate-900">${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+              </div>
+              <div className="w-10 h-10 bg-[var(--color-aqua)]/10 text-[var(--color-aqua)] rounded-full flex items-center justify-center">
+                <DollarSign size={20} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="rounded-xl shadow-sm border-slate-200">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-slate-500">Total Outstanding Receivables</p>
+                <h2 className="text-3xl font-bold text-slate-900">${totalOutstanding.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+              </div>
+              <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center">
+                <CreditCard size={20} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-xl shadow-sm border-slate-200">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-slate-500">Total Active Customers</p>
+                <h2 className="text-3xl font-bold text-slate-900">{totalActive}</h2>
+              </div>
+              <div className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
+                <Users size={20} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Toolbar */}
@@ -89,8 +140,9 @@ export default function CustomersPage() {
                 <TableHead className="w-24 font-semibold text-slate-600">ID</TableHead>
                 <TableHead className="font-semibold text-slate-600">CUSTOMER NAME</TableHead>
                 <TableHead className="font-semibold text-slate-600">PHONE</TableHead>
-                <TableHead className="text-center font-semibold text-slate-600">TOTAL ORDERS</TableHead>
-                <TableHead className="text-right font-semibold text-slate-600">TOTAL SPENT</TableHead>
+                <TableHead className="text-right font-semibold text-slate-600">TOTAL BILLED</TableHead>
+                <TableHead className="text-right font-semibold text-slate-600">AMOUNT PAID</TableHead>
+                <TableHead className="text-right font-semibold text-slate-600">BALANCE RECEIVABLE</TableHead>
                 <TableHead className="text-center font-semibold text-slate-600">{t("status").toUpperCase()}</TableHead>
                 <TableHead className="text-right font-semibold text-slate-600">{t("actions").toUpperCase()}</TableHead>
               </TableRow>
@@ -113,9 +165,14 @@ export default function CustomersPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-slate-600">{customer.phone}</TableCell>
-                      <TableCell className="text-center font-medium text-slate-900">{customer.orders}</TableCell>
-                      <TableCell className="text-right font-semibold text-slate-900">
-                        ${customer.spent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <TableCell className="text-right font-medium text-slate-900">
+                        ${customer.billed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </TableCell>
+                      <TableCell className="text-right font-medium text-slate-600">
+                        ${customer.paid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </TableCell>
+                      <TableCell className={`text-right font-bold ${customer.billed - customer.paid > 0 ? 'text-orange-600' : 'text-slate-900'}`}>
+                        ${(customer.billed - customer.paid).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge 
@@ -150,6 +207,7 @@ export default function CustomersPage() {
                 </TableRow>
               )}
             </TableBody>
+
           </Table>
         </div>
 
