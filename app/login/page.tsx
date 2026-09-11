@@ -24,7 +24,7 @@ export default function LoginPage() {
             <MonitorSmartphone className="text-[var(--color-aqua)]" size={20} />
           </div>
           <div>
-            <h2 className="text-[var(--color-ocean-blue)] font-bold text-lg leading-tight">POS</h2>
+            <h2 className="text-[var(--color-ocean-blue)] font-bold text-lg leading-tight">Ledger System</h2>
             <p className="text-xs text-slate-500 font-medium">Multi-Customer Billing</p>
           </div>
         </div>
@@ -84,7 +84,7 @@ export default function LoginPage() {
       </div>
       
       <p className="mt-8 text-sm text-slate-400">
-        2026 POS All rights reserved
+        2026 Ledger System All rights reserved
       </p>
     </div>
   );

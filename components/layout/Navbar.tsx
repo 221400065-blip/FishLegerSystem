@@ -1,7 +1,8 @@
 "use client";
 
-import { Bell, Search, ChevronDown, ArrowLeft, LogOut, Settings, User } from "lucide-react";
+import { Bell, Search, ChevronDown, ArrowLeft, LogOut, Settings, User, Globe } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/lib/LanguageContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,7 +17,7 @@ import { useState } from "react";
 
 export function Navbar() {
   const router = useRouter();
-  const [timeFilter, setTimeFilter] = useState("Today");
+  const { language, setLanguage, t, timeFilter, setTimeFilter } = useLanguage();
 
   return (
     <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 w-full sticky top-0 z-40">
@@ -29,8 +30,8 @@ export function Navbar() {
           <ArrowLeft size={20} />
         </button>
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Welcome Back, Store Manager</h1>
-          <p className="text-sm text-slate-500">09 Sep 2026 · Wednesday</p>
+          <h1 className="text-xl font-bold text-slate-900">{t("welcomeBack")}</h1>
+          <p className="text-sm text-slate-500">09 Sep 2026</p>
         </div>
       </div>
 
@@ -39,19 +40,27 @@ export function Navbar() {
            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
            <input 
              type="text" 
-             placeholder="Search anything..." 
+             placeholder={t("searchPlaceholder")}
              className="pl-10 pr-4 py-2 w-64 bg-slate-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-aqua)] transition-all"
            />
         </div>
 
+        <button
+          onClick={() => setLanguage(language === "en" ? "ur" : "en")}
+          className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 shadow-sm rounded-full hover:bg-slate-50 transition-colors focus:outline-none"
+        >
+          <Globe size={16} className="text-[var(--color-aqua)]" />
+          {language === "en" ? "اردو" : "English"}
+        </button>
+
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 px-4 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 shadow-sm rounded-full hover:bg-slate-50 transition-colors focus:outline-none">
-            {timeFilter} <ChevronDown size={14} className="text-slate-500" />
+            {timeFilter === "Today" ? t("today") : timeFilter === "This Week" ? t("thisWeek") : t("thisMonth")} <ChevronDown size={14} className="text-slate-500" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-36">
-            <DropdownMenuItem onClick={() => setTimeFilter("Today")} className="cursor-pointer font-medium">Today</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setTimeFilter("This Week")} className="cursor-pointer font-medium">This Week</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setTimeFilter("This Month")} className="cursor-pointer font-medium">This Month</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTimeFilter("Today")} className="cursor-pointer font-medium">{t("today")}</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTimeFilter("This Week")} className="cursor-pointer font-medium">{t("thisWeek")}</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTimeFilter("This Month")} className="cursor-pointer font-medium">{t("thisMonth")}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -62,17 +71,17 @@ export function Navbar() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-64">
             <DropdownMenuGroup>
-              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+              <DropdownMenuLabel>{t("notifications")}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="cursor-pointer">
                 <div className="flex flex-col">
-                  <span className="font-medium text-sm text-slate-900">Low Stock Alert</span>
-                  <span className="text-xs text-slate-500">5 items are running out of stock.</span>
+                  <span className="font-medium text-sm text-slate-900">{t("lowStockAlert")}</span>
+                  <span className="text-xs text-slate-500">5 {t("productsLowStock")}</span>
                 </div>
               </DropdownMenuItem>
               <DropdownMenuItem className="cursor-pointer">
                 <div className="flex flex-col">
-                  <span className="font-medium text-sm text-slate-900">New Order</span>
+                  <span className="font-medium text-sm text-slate-900">{t("newOrder")}</span>
                   <span className="text-xs text-slate-500">Ahmed Traders placed an order.</span>
                 </div>
               </DropdownMenuItem>
@@ -93,20 +102,20 @@ export function Navbar() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuGroup>
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>{t("myAccount")}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/settings')}>
+              <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/profile')}>
                 <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
+                <span>{t("profile") || "Profile"}</span>
               </DropdownMenuItem>
               <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/settings')}>
                 <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
+                <span>{t("settings")}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="cursor-pointer text-red-600 focus:text-red-600" onClick={() => router.push('/login')}>
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
+                <span>{t("logout")}</span>
               </DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>

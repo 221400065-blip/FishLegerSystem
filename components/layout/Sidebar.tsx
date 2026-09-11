@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   MonitorSmartphone,
@@ -12,18 +12,23 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
+import { useLanguage } from "@/lib/LanguageContext";
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { t } = useLanguage();
 
   const navItems = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "POS Terminal", href: "/pos", icon: MonitorSmartphone },
-    { name: "Customers", href: "/customers", icon: Users },
-    { name: "Inventory", href: "/inventory", icon: Package },
-    { name: "Suppliers", href: "/suppliers", icon: Truck },
-    { name: "Reports", href: "/reports", icon: BarChart3 },
-    { name: "Settings", href: "/settings", icon: Settings },
+    { id: "dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { id: "posTerminal", href: "/pos", icon: MonitorSmartphone },
+    { id: "customers", href: "/customers", icon: Users },
+    { id: "inventory", href: "/inventory", icon: Package },
+    { id: "suppliers", href: "/suppliers", icon: Truck },
+    { id: "expenses", href: "/expenses", icon: BarChart3 },
+    { id: "purchaseBills", href: "/purchase-bills", icon: Package },
+    { id: "reports", href: "/reports", icon: BarChart3 },
+    { id: "settings", href: "/settings", icon: Settings },
   ];
 
   return (
@@ -32,7 +37,7 @@ export function Sidebar() {
         <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
            <MonitorSmartphone size={18} className="text-[var(--color-aqua)]" />
         </div>
-        POS System
+        Ledger System
       </div>
       
       <nav className="flex-1 px-4 space-y-1 mt-4">
@@ -40,7 +45,7 @@ export function Sidebar() {
           const isActive = pathname === item.href || pathname?.startsWith(item.href + '/');
           return (
             <Link
-              key={item.name}
+              key={item.id}
               href={item.href}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
                 isActive
@@ -49,20 +54,29 @@ export function Sidebar() {
               }`}
             >
               <item.icon size={18} />
-              {item.name}
+              {t(item.id as any)}
             </Link>
           );
         })}
       </nav>
 
       <div className="p-4 border-t border-white/10 mt-auto">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-white">Admin</p>
-            <p className="text-xs text-slate-400">samar@gmail.com</p>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-[var(--color-aqua)] flex items-center justify-center font-bold text-sm text-[var(--color-ocean-blue)] shrink-0">
+              A
+            </div>
+            <div>
+              <p className="text-sm font-medium text-white">Admin</p>
+              <p className="text-xs text-slate-400">samar@gmail.com</p>
+            </div>
           </div>
-          <button className="p-2 text-slate-400 hover:text-white transition-colors" title="Sign Out">
-            <LogOut size={18} />
+          <button 
+            onClick={() => router.push('/login')}
+            className="flex items-center gap-2 text-red-400 hover:text-red-300 transition-colors text-sm font-medium" 
+            title="Sign Out"
+          >
+            <LogOut size={16} className="rotate-180" /> Sign Out
           </button>
         </div>
       </div>

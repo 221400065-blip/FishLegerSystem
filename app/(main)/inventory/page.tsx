@@ -1,4 +1,5 @@
 "use client";
+import { useLanguage } from "@/lib/LanguageContext";
 
 import { useState } from "react";
 import { Search, Plus, Edit, Trash2, Package, AlertTriangle, XOctagon } from "lucide-react";
@@ -21,8 +22,10 @@ const inventoryData = [
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 
 export default function InventoryPage() {
+  const { t } = useLanguage();
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("All");
   const [addProductModal, setAddProductModal] = useState(false);
 
   const filteredProducts = inventoryData.filter(product => {
@@ -30,7 +33,15 @@ export default function InventoryPage() {
     const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           product.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           product.category.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    
+    let matchesStatus = true;
+    if (filterStatus === "Low Stock") {
+      matchesStatus = product.stock > 0 && product.stock < 15;
+    } else if (filterStatus === "Out of Stock") {
+      matchesStatus = product.stock === 0;
+    }
+
+    return matchesCategory && matchesSearch && matchesStatus;
   });
 
   const totalProducts = inventoryData.length;
@@ -42,7 +53,10 @@ export default function InventoryPage() {
       
       {/* Top Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="rounded-xl shadow-sm border-slate-200">
+        <Card 
+          onClick={() => setFilterStatus("All")}
+          className={`rounded-xl shadow-sm border-slate-200 cursor-pointer transition-all ${filterStatus === "All" ? "ring-2 ring-[var(--color-aqua)]" : "hover:border-[var(--color-aqua)]"}`}
+        >
           <CardContent className="p-6 flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-slate-500 uppercase tracking-wider mb-1">Total Products</p>
@@ -54,10 +68,13 @@ export default function InventoryPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl shadow-sm border-slate-200 bg-orange-50 border-orange-200">
+        <Card 
+          onClick={() => setFilterStatus("Low Stock")}
+          className={`rounded-xl shadow-sm border-orange-200 bg-orange-50 cursor-pointer transition-all ${filterStatus === "Low Stock" ? "ring-2 ring-orange-500" : "hover:border-orange-400"}`}
+        >
           <CardContent className="p-6 flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-orange-800 uppercase tracking-wider mb-1">Low Stock Alert</p>
+              <p className="text-sm font-medium text-orange-800 uppercase tracking-wider mb-1">{t("inventoryAlert")}</p>
               <h2 className="text-3xl font-bold text-orange-600">{lowStockCount}</h2>
             </div>
             <div className="w-12 h-12 bg-orange-200 text-orange-700 rounded-xl flex items-center justify-center">
@@ -66,7 +83,10 @@ export default function InventoryPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl shadow-sm border-slate-200 bg-red-50 border-red-200">
+        <Card 
+          onClick={() => setFilterStatus("Out of Stock")}
+          className={`rounded-xl shadow-sm border-red-200 bg-red-50 cursor-pointer transition-all ${filterStatus === "Out of Stock" ? "ring-2 ring-red-500" : "hover:border-red-400"}`}
+        >
           <CardContent className="p-6 flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-red-800 uppercase tracking-wider mb-1">Out of Stock</p>
@@ -111,7 +131,7 @@ export default function InventoryPage() {
         </div>
 
         <Button onClick={() => setAddProductModal(true)} className="bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90 text-white font-semibold w-full md:w-auto shrink-0">
-          <Plus size={18} className="mr-2" /> Add New Product
+          <Plus size={18} className="mr-2" /> {t("addNew")} Product
         </Button>
       </div>
 
@@ -128,7 +148,7 @@ export default function InventoryPage() {
                 <TableHead className="text-center font-semibold text-slate-600">STOCK QTY</TableHead>
                 <TableHead className="text-right font-semibold text-slate-600">UNIT PRICE</TableHead>
                 <TableHead className="text-right font-semibold text-slate-600">SELLING PRICE</TableHead>
-                <TableHead className="text-right font-semibold text-slate-600">ACTIONS</TableHead>
+                <TableHead className="text-right font-semibold text-slate-600">{t("actions").toUpperCase()}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

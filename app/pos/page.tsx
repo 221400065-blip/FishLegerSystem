@@ -1,4 +1,5 @@
 "use client";
+import { useLanguage } from "@/lib/LanguageContext";
 
 import { MonitorSmartphone, Search, ChevronDown, Plus, Minus, Edit, Trash2, ArrowLeft, User, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -31,11 +32,15 @@ const products = [
   { id: "P-104", name: "Fast Charger 20W", category: "Chargers", price: 18.00, discount: null, image: "https://placehold.co/80x80/06B6D4/FFFFFF?text=20W" },
 ];
 
-export default function POSBillingPage() {
+export default function POSPage() {
+  const { t, customerBillFormat } = useLanguage();
   const router = useRouter();
   const [completeSaleModal, setCompleteSaleModal] = useState(false);
   const [payAllModal, setPayAllModal] = useState(false);
+  const [addCustomerModal, setAddCustomerModal] = useState(false);
   const [activeTab, setActiveTab] = useState("All");
+  const [applyCommission, setApplyCommission] = useState(false);
+  const [commissionRate, setCommissionRate] = useState(8);
 
   const [activeCustomerId, setActiveCustomerId] = useState("C-001");
   const [carts, setCarts] = useState<Record<string, any[]>>({
@@ -54,14 +59,25 @@ export default function POSBillingPage() {
   const activeCart = carts[activeCustomerId] || [];
 
   const subtotal = activeCart.reduce((sum, item) => sum + item.total, 0);
-  const commission = subtotal * 0.08;
-  const customerTotal = subtotal + commission;
+  const commission = subtotal * (commissionRate / 100);
+  const customerTotal = applyCommission ? subtotal + commission : subtotal;
 
   const totalActiveSessions = Object.values(carts).filter(cart => cart.length > 0).length;
   const combinedSubtotal = Object.values(carts).reduce((sum, cart) => sum + cart.reduce((s, i) => s + i.total, 0), 0);
-  const totalTax = combinedSubtotal * 0.08;
+  const totalTax = combinedSubtotal * (commissionRate / 100);
   const grandTotal = combinedSubtotal + totalTax;
   const totalItems = Object.values(carts).reduce((sum, cart) => sum + cart.reduce((s, i) => s + i.qty, 0), 0);
+
+  const handlePrint = () => {
+    // Set print format class on body
+    if (customerBillFormat === "thermal") {
+      document.body.classList.add("print-thermal");
+      document.body.classList.remove("print-simple");
+    } else {
+      document.body.classList.add("print-simple");
+      document.body.classList.remove("print-thermal");
+    }window.print();
+  };
 
   return (
     <div className="min-h-screen bg-[var(--color-canvas)] flex flex-col h-screen overflow-hidden">
@@ -75,17 +91,12 @@ export default function POSBillingPage() {
             <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
               <MonitorSmartphone className="text-[var(--color-aqua)]" size={18} />
             </div>
-            <h1 className="font-bold text-lg tracking-wide">POS / Multi-Customer Sales</h1>
+            <h1 className="font-bold text-lg tracking-wide">Ledger System / Multi-Customer Sales</h1>
           </Link>
         </div>
         
         <div className="flex-1 max-w-md mx-8 relative">
-           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-           <input 
-             type="text" 
-             placeholder="Search invoice or product ID..." 
-             className="w-full pl-9 pr-4 py-1.5 bg-white/10 border border-white/20 rounded-md text-sm text-white placeholder-slate-300 focus:outline-none focus:ring-1 focus:ring-[var(--color-aqua)]"
-           />
+           {/* Search removed based on feedback */}
         </div>
 
         <div className="flex items-center gap-6">
@@ -101,20 +112,20 @@ export default function POSBillingPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuGroup>
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuLabel>{t("myAccount")}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/settings')}>
+                <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/profile')}>
                   <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
+                  <span>{t("profile") || "Profile"}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/settings')}>
                   <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
+                  <span>{t("settings")}</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="cursor-pointer text-red-600 focus:text-red-600" onClick={() => router.push('/login')}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
+                  <span>{t("logout")}</span>
                 </DropdownMenuItem>
               </DropdownMenuGroup>
             </DropdownMenuContent>
@@ -131,9 +142,9 @@ export default function POSBillingPage() {
           {/* Customer Selection */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col shrink-0">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="font-bold text-slate-900 text-sm">Select Customer</h2>
-              <Button size="sm" variant="ghost" className="text-[var(--color-aqua)] h-7 px-2 text-xs font-semibold">
-                <Plus size={14} className="mr-1" /> Add Customer
+              <h2 className="font-bold text-slate-900 text-sm">{t("selectCustomer")}</h2>
+              <Button onClick={() => setAddCustomerModal(true)} size="sm" variant="ghost" className="text-[var(--color-aqua)] h-7 px-2 text-xs font-semibold">
+                <Plus size={14} className="mr-1" /> {t("add")} Customer
               </Button>
             </div>
             <div className="relative mb-3">
@@ -159,7 +170,7 @@ export default function POSBillingPage() {
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex-1 flex flex-col min-h-0">
             <div className="relative mb-3 shrink-0">
                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-               <Input placeholder="Search product..." className="h-9 pl-8 text-sm bg-slate-50" />
+               <Input placeholder={t("searchProduct")} className="h-9 pl-8 text-sm bg-slate-50" />
             </div>
             
             <div className="flex gap-1 mb-4 overflow-x-auto hide-scrollbar shrink-0 border-b border-slate-100 pb-2">
@@ -199,15 +210,12 @@ export default function POSBillingPage() {
         <div className="w-[38%] bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col">
           <div className="p-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-slate-50/50 rounded-t-xl">
             <div>
-              <p className="text-xs text-slate-500 font-medium">Billing to</p>
+              <p className="text-xs text-slate-500 font-medium">{t("billingTo")}</p>
               <h2 className="font-bold text-slate-900 flex items-center gap-2">
                 {activeCustomer.name} <span className="text-xs font-normal text-slate-500 bg-white border px-1.5 py-0.5 rounded">({activeCustomer.id})</span>
               </h2>
             </div>
-            <div className="flex gap-2">
-              <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-[var(--color-aqua)]"><Edit size={16} /></Button>
-              <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red-500"><Trash2 size={16} /></Button>
-            </div>
+            {/* Action buttons removed as requested */}
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
@@ -247,22 +255,45 @@ export default function POSBillingPage() {
 
           <div className="p-4 border-t border-slate-100 shrink-0 bg-slate-50 rounded-b-xl">
             <div className="space-y-2 text-sm mb-4">
-              <div className="flex justify-between text-slate-600">
-                <span>Subtotal</span>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Subtotal (Without Commission)</span>
                 <span className="font-medium text-slate-900">${subtotal.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-slate-600">
-                <span>Commission (8%)</span>
-                <span className="font-medium text-slate-900">${commission.toFixed(2)}</span>
+              <div className="flex justify-between text-sm items-center py-1">
+                <label className="text-slate-500 flex items-center gap-2 cursor-pointer select-none">
+                  <input 
+                    type="checkbox" 
+                    checked={applyCommission} 
+                    onChange={(e) => setApplyCommission(e.target.checked)} 
+                    className="rounded text-[var(--color-aqua)] focus:ring-[var(--color-aqua)] w-4 h-4 cursor-pointer" 
+                  />
+                  Apply Commission (%)
+                </label>
+                {applyCommission && (
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="number" 
+                      value={commissionRate} 
+                      onChange={(e) => setCommissionRate(Number(e.target.value))} 
+                      className="w-12 h-6 px-1 border border-slate-200 rounded text-right text-xs focus:outline-none focus:border-[var(--color-aqua)]" 
+                    />
+                    <span className="font-medium text-slate-900 w-14 text-right">${commission.toFixed(2)}</span>
+                  </div>
+                )}
               </div>
-              <div className="pt-2 border-t border-slate-200 border-dashed flex justify-between items-center mt-2">
-                <span className="font-bold text-slate-900">Customer Total</span>
-                <span className="font-bold text-2xl text-[var(--color-aqua)]">${customerTotal.toFixed(2)}</span>
+              <div className="flex justify-between text-lg font-bold pt-2 border-t border-slate-200 mt-2">
+                <span className="text-slate-900">Grand Total</span>
+                <span className="text-[var(--color-aqua)]">${customerTotal.toFixed(2)}</span>
               </div>
             </div>
-            <Button onClick={() => setCompleteSaleModal(true)} className="w-full h-12 bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90 text-white font-bold text-base shadow-sm">
-              Complete Sale
-            </Button>
+            <div className="flex gap-2 mt-4">
+              <Button onClick={handlePrint} variant="outline" className="flex-1 h-12 text-[var(--color-aqua)] border-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/10 hover:text-[var(--color-aqua)] font-bold text-base shadow-sm">
+                Print Bill
+              </Button>
+              <Button onClick={() => setCompleteSaleModal(true)} className="flex-1 h-12 bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90 text-white font-bold text-base shadow-sm">
+                {t("completeSale")}
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -270,7 +301,7 @@ export default function POSBillingPage() {
         <div className="w-[28%] flex flex-col gap-4">
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 flex flex-col">
              <div className="p-4 border-b border-slate-100">
-               <h2 className="font-bold text-slate-900">Active Sessions</h2>
+               <h2 className="font-bold text-slate-900">{t("activeSessions")}</h2>
              </div>
              <div className="flex-1 p-2 space-y-2 overflow-y-auto custom-scrollbar">
                 {customers.filter(c => carts[c.id]?.length > 0).map(c => {
@@ -291,7 +322,11 @@ export default function POSBillingPage() {
                         <p className={`text-sm font-bold ${isActive ? 'text-[var(--color-ocean-blue)]' : 'text-slate-700'}`}>{c.name}</p>
                         <p className="text-xs text-slate-500">{cart.length} items</p>
                       </div>
-                      <p className={`font-bold ${isActive ? 'text-[var(--color-aqua)]' : 'text-slate-900'}`}>${cTotal.toFixed(2)}</p>
+                      <div className="flex flex-col items-end text-xs">
+                        <span className="text-slate-500">Subtotal: ${cSub.toFixed(2)}</span>
+                        <span className="text-slate-500">Comm (8%): ${(cSub * 0.08).toFixed(2)}</span>
+                        <span className={`font-bold text-sm mt-1 ${isActive ? 'text-[var(--color-aqua)]' : 'text-slate-900'}`}>Total: ${cTotal.toFixed(2)}</span>
+                      </div>
                     </div>
                   );
                 })}
@@ -302,36 +337,61 @@ export default function POSBillingPage() {
             <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/5 rounded-full blur-2xl"></div>
             <div className="absolute -left-6 -bottom-6 w-32 h-32 bg-[var(--color-aqua)]/10 rounded-full blur-2xl"></div>
             
-            <h3 className="text-slate-300 text-sm font-medium mb-4 uppercase tracking-wider relative z-10">Grand Summary</h3>
+            <h3 className="text-slate-300 text-sm font-medium mb-4 uppercase tracking-wider relative z-10">{t("grandSummary")}</h3>
             
             <div className="space-y-2 text-sm relative z-10">
               <div className="flex justify-between">
-                <span className="text-slate-300">Total Items</span>
+                <span className="text-slate-300">{t("totalItems")}</span>
                 <span className="font-semibold">{totalItems}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-300">Combined Subtotal</span>
+                <span className="text-slate-300">{t("combinedSubtotal")}</span>
                 <span className="font-semibold">${combinedSubtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-300">Tax (8%)</span>
+                <span className="text-slate-300">{t("tax")} (8%)</span>
                 <span className="font-semibold">${totalTax.toFixed(2)}</span>
               </div>
             </div>
 
             <div className="mt-6 pt-4 border-t border-white/20 relative z-10">
-              <p className="text-slate-300 text-xs mb-1">Grand Total</p>
+              <p className="text-slate-300 text-xs mb-1">{t("grandTotal")}</p>
               <h2 className="text-4xl font-bold text-[var(--color-aqua)] tracking-tight">${grandTotal.toFixed(2)}</h2>
             </div>
 
-            <Button onClick={() => setPayAllModal(true)} className="w-full mt-6 h-12 bg-orange-500 hover:bg-orange-600 text-white font-bold text-base shadow-sm relative z-10">
-              Pay All Invoices
+            <Button onClick={() => setPayAllModal(true)} className="w-full mt-6 h-12 bg-orange-600 hover:bg-orange-700 text-white font-bold text-base shadow-sm relative z-10">
+              Save Invoice
             </Button>
           </div>
         </div>
       </div>
 
       {/* Modals */}
+      <Dialog open={addCustomerModal} onOpenChange={setAddCustomerModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Add New Customer</DialogTitle>
+            <DialogDescription>
+              Enter the details of the new customer below.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Customer Name</label>
+              <Input placeholder="e.g. Bilal Traders" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Contact Number</label>
+              <Input placeholder="+92 300 0000000" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddCustomerModal(false)}>Cancel</Button>
+            <Button onClick={() => setAddCustomerModal(false)} className="bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90">Add Customer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={completeSaleModal} onOpenChange={setCompleteSaleModal}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>

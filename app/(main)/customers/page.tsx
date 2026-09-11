@@ -1,4 +1,5 @@
 "use client";
+import { useLanguage } from "@/lib/LanguageContext";
 
 import { useState } from "react";
 import { Search, Plus, Edit, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
@@ -19,6 +20,7 @@ const allCustomers = [
 ];
 
 export default function CustomersPage() {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [activePage, setActivePage] = useState(1);
@@ -89,9 +91,8 @@ export default function CustomersPage() {
                 <TableHead className="font-semibold text-slate-600">PHONE</TableHead>
                 <TableHead className="text-center font-semibold text-slate-600">TOTAL ORDERS</TableHead>
                 <TableHead className="text-right font-semibold text-slate-600">TOTAL SPENT</TableHead>
-                <TableHead className="text-center font-semibold text-slate-600">COMMISSION</TableHead>
-                <TableHead className="font-semibold text-slate-600">STATUS</TableHead>
-                <TableHead className="text-right font-semibold text-slate-600">ACTIONS</TableHead>
+                <TableHead className="text-center font-semibold text-slate-600">{t("status").toUpperCase()}</TableHead>
+                <TableHead className="text-right font-semibold text-slate-600">{t("actions").toUpperCase()}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -117,11 +118,6 @@ export default function CustomersPage() {
                         ${customer.spent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge variant="outline" className="bg-slate-50 text-slate-600 font-medium">
-                          {customer.commission}%
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
                         <Badge 
                           variant="secondary" 
                           className={`font-semibold ${
@@ -213,10 +209,6 @@ export default function CustomersPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Phone Number</label>
               <Input placeholder="e.g. +92 300 1234567" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Commission %</label>
-              <Input type="number" placeholder="0" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Status</label>
