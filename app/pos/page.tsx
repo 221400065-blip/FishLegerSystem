@@ -64,8 +64,8 @@ export default function POSPage() {
 
   const totalActiveSessions = Object.values(carts).filter(cart => cart.length > 0).length;
   const combinedSubtotal = Object.values(carts).reduce((sum, cart) => sum + cart.reduce((s, i) => s + i.total, 0), 0);
-  const totalTax = combinedSubtotal * (commissionRate / 100);
-  const grandTotal = combinedSubtotal + totalTax;
+  const totalCommission = combinedSubtotal * (commissionRate / 100);
+  const grandTotal = combinedSubtotal + totalCommission;
   const totalItems = Object.values(carts).reduce((sum, cart) => sum + cart.reduce((s, i) => s + i.qty, 0), 0);
 
   const handlePrint = () => {
@@ -349,8 +349,8 @@ export default function POSPage() {
                 <span className="font-semibold">${combinedSubtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-300">{t("tax")} (8%)</span>
-                <span className="font-semibold">${totalTax.toFixed(2)}</span>
+                <span className="text-slate-300">Commission ({commissionRate}%)</span>
+                <span className="font-semibold">${totalCommission.toFixed(2)}</span>
               </div>
             </div>
 

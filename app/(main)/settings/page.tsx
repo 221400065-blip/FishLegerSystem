@@ -191,24 +191,13 @@ export default function SettingsPage() {
           {activeTab === "Commission" && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">Tax & Commission Settings</h2>
-                <p className="text-sm text-slate-500">Configure global tax and commission rates.</p>
+                <h2 className="text-lg font-bold text-slate-900">Commission Settings</h2>
+                <p className="text-sm text-slate-500">Configure global commission rates.</p>
               </div>
               <div className="space-y-4 max-w-md">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Tax (%)</label>
-                  <input type="number" className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-aqua)]" defaultValue="8" />
-                </div>
-                <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Commission for POS (%)</label>
                   <input type="number" className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-aqua)]" defaultValue="8" />
-                </div>
-                <div className="flex items-center justify-between py-2 border-b border-slate-100">
-                  <span className="text-sm font-medium text-slate-700">Apply Tax to Orders</span>
-                  <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                      <input type="checkbox" name="toggle" id="toggle1" defaultChecked className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 border-slate-200 appearance-none cursor-pointer checked:right-0 checked:border-[var(--color-aqua)] checked:bg-[var(--color-aqua)] transition-all"/>
-                      <label htmlFor="toggle1" className="toggle-label block overflow-hidden h-5 rounded-full bg-slate-200 cursor-pointer"></label>
-                  </div>
                 </div>
                 <div className="flex items-center justify-between py-2">
                   <span className="text-sm font-medium text-slate-700">Apply Commission to POS</span>

@@ -18,6 +18,8 @@ const expenses = [
 export default function ExpensesPage() {
   const { t } = useLanguage();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState<any>(null);
   const [expenseList, setExpenseList] = useState(expenses);
   const [newExpense, setNewExpense] = useState({ description: "", category: "", amount: "" });
 
@@ -67,13 +69,13 @@ export default function ExpensesPage() {
               </TableHeader>
               <TableBody>
                 {expenseList.map((expense) => (
-                  <TableRow key={expense.id}>
+                  <TableRow key={expense.id} className="cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => { setSelectedExpense(expense); setIsDetailModalOpen(true); }}>
                     <TableCell className="text-slate-600">{expense.date}</TableCell>
                     <TableCell className="font-medium text-slate-900">{expense.description}</TableCell>
                     <TableCell>{expense.category}</TableCell>
                     <TableCell className="text-right font-semibold text-slate-900 pr-12">${expense.amount.toFixed(2)}</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-900 bg-slate-900 rounded-md text-white hover:bg-slate-800 hover:text-white">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-900 bg-slate-900 rounded-md text-white hover:bg-slate-800 hover:text-white" onClick={(e) => { e.stopPropagation(); setSelectedExpense(expense); setIsDetailModalOpen(true); }}>
                         <MoreHorizontal size={16} />
                       </Button>
                     </TableCell>
@@ -120,6 +122,54 @@ export default function ExpensesPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
             <Button className="bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90 text-white" onClick={handleAddExpense}>Add Expense</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Expense Details</DialogTitle>
+            <DialogDescription>Detailed view of this expense record.</DialogDescription>
+          </DialogHeader>
+          {selectedExpense && (
+            <div className="space-y-4 py-4">
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-slate-600">ID</span>
+                <span className="font-medium text-slate-900">{selectedExpense.id}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-slate-600">Date</span>
+                <span className="font-medium text-slate-900">{selectedExpense.date}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-slate-600">Description</span>
+                <span className="font-medium text-slate-900">{selectedExpense.description}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-slate-600">Category</span>
+                <span className="font-medium text-slate-900">{selectedExpense.category}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-slate-600">Amount</span>
+                <span className="font-bold text-[var(--color-aqua)]">${selectedExpense.amount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-slate-600">Payment Method</span>
+                <span className="font-medium text-slate-900">Cash</span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="text-slate-600">Notes</span>
+                <span className="font-medium text-slate-500 text-right max-w-[200px]">N/A</span>
+              </div>
+            </div>
+          )}
+          <DialogFooter className="flex items-center gap-2 mt-4 sm:justify-between">
+            <Button variant="destructive" onClick={() => setIsDetailModalOpen(false)}>Delete</Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setIsDetailModalOpen(false)}>Close</Button>
+              <Button className="bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90 text-white" onClick={() => setIsDetailModalOpen(false)}>Edit Expense</Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

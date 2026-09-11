@@ -1,8 +1,10 @@
 "use client";
+import { useState } from "react";
 import { useLanguage } from "@/lib/LanguageContext";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, DollarSign, ShoppingCart, Percent, Truck, MoreHorizontal } from "lucide-react";
 import { SalesTrendsChart, TopCategoriesChart } from "@/components/dashboard/Charts";
@@ -18,6 +20,8 @@ const recentOrders = [
 
 export default function DashboardPage() {
   const { t, timeFilter } = useLanguage();
+  const [salesModalOpen, setSalesModalOpen] = useState(false);
+  const [profitModalOpen, setProfitModalOpen] = useState(false);
 
   const metrics = {
     "Today": { sales: "$12,450", suppliers: 8, profit: "$3,240", salesChange: "+15% from yesterday", suppliersChange: "+2 active", profitChange: "+12% margin" },
@@ -54,8 +58,8 @@ export default function DashboardPage() {
 
       {/* Metric Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        <Link href="/reports">
-          <Card className="rounded-xl shadow-sm border-slate-200 hover:border-[var(--color-aqua)] transition-colors cursor-pointer h-full">
+        <div onClick={() => setSalesModalOpen(true)} className="cursor-pointer h-full">
+          <Card className="rounded-xl shadow-sm border-slate-200 hover:border-[var(--color-aqua)] transition-colors h-full">
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
                 <div className="space-y-2">
@@ -73,7 +77,7 @@ export default function DashboardPage() {
               </div>
             </CardContent>
           </Card>
-        </Link>
+        </div>
 
         <Link href="/suppliers">
           <Card className="rounded-xl shadow-sm border-slate-200 hover:border-[var(--color-aqua)] transition-colors cursor-pointer h-full">
@@ -96,8 +100,8 @@ export default function DashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/reports">
-          <Card className="rounded-xl shadow-sm border-slate-200 hover:border-[var(--color-aqua)] transition-colors cursor-pointer h-full">
+        <div onClick={() => setProfitModalOpen(true)} className="cursor-pointer h-full">
+          <Card className="rounded-xl shadow-sm border-slate-200 hover:border-[var(--color-aqua)] transition-colors h-full">
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
                 <div className="space-y-2">
@@ -115,7 +119,7 @@ export default function DashboardPage() {
               </div>
             </CardContent>
           </Card>
-        </Link>
+        </div>
       </div>
 
       {/* Charts Section */}
@@ -143,6 +147,56 @@ export default function DashboardPage() {
 
 
       
+      {/* Modals */}
+      <Dialog open={salesModalOpen} onOpenChange={setSalesModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Sales Breakdown ({timeFilter})</DialogTitle>
+            <DialogDescription>Detailed view of your sales metrics.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex justify-between py-2 border-b">
+              <span className="text-slate-600">Total Sales</span>
+              <span className="font-bold text-slate-900">{currentMetrics.sales}</span>
+            </div>
+            <div className="flex justify-between py-2 border-b">
+              <span className="text-slate-600">Cash Payments</span>
+              <span className="font-semibold text-slate-900">45%</span>
+            </div>
+            <div className="flex justify-between py-2 border-b">
+              <span className="text-slate-600">Card Payments</span>
+              <span className="font-semibold text-slate-900">35%</span>
+            </div>
+            <div className="flex justify-between py-2">
+              <span className="text-slate-600">Bank Transfers</span>
+              <span className="font-semibold text-slate-900">20%</span>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={profitModalOpen} onOpenChange={setProfitModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Profit Breakdown ({timeFilter})</DialogTitle>
+            <DialogDescription>Detailed view of your profit margins.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex justify-between py-2 border-b">
+              <span className="text-slate-600">Total Profit</span>
+              <span className="font-bold text-green-600">{currentMetrics.profit}</span>
+            </div>
+            <div className="flex justify-between py-2 border-b">
+              <span className="text-slate-600">Gross Margin</span>
+              <span className="font-semibold text-slate-900">32%</span>
+            </div>
+            <div className="flex justify-between py-2">
+              <span className="text-slate-600">Net Margin</span>
+              <span className="font-semibold text-slate-900">24%</span>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
