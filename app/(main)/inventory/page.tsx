@@ -2,14 +2,14 @@
 import { useLanguage } from "@/lib/LanguageContext";
 
 import { useState } from "react";
-import { Search, Plus, Edit, Trash2, Package, AlertTriangle, XOctagon } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Package, AlertTriangle, XOctagon, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 
-const inventoryData = [
+const initialInventory = [
   { id: "P-101", image: "https://placehold.co/80x80/06B6D4/FFFFFF?text=65W", title: "Samsung 65W Charger", category: "Chargers", sku: "CHG-S65W", stock: 45, unitPrice: 25.00, sellingPrice: 45.00 },
   { id: "P-102", image: "https://placehold.co/80x80/f97316/FFFFFF?text=2M", title: "iPhone Cable 2M", category: "Cables", sku: "CBL-IP2M", stock: 8, unitPrice: 10.00, sellingPrice: 25.00 },
   { id: "P-103", image: "https://placehold.co/80x80/0B2545/FFFFFF?text=Hub", title: "USB-C Hub Multi", category: "Accessories", sku: "ACC-HUB", stock: 24, unitPrice: 35.00, sellingPrice: 65.00 },
@@ -23,12 +23,22 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 
 export default function InventoryPage() {
   const { t } = useLanguage();
+  const [inventory, setInventory] = useState(initialInventory);
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
+  
+  // Modals state
   const [addProductModal, setAddProductModal] = useState(false);
+  const [editProductModal, setEditProductModal] = useState(false);
+  const [viewProductModal, setViewProductModal] = useState(false);
+  const [deleteModal, setDeleteModal] = useState(false);
+  
+  // Form and selected item state
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [formData, setFormData] = useState({ title: "", category: "Accessories", sku: "", unitPrice: 0, sellingPrice: 0, stock: 0 });
 
-  const filteredProducts = inventoryData.filter(product => {
+  const filteredProducts = inventory.filter(product => {
     const matchesCategory = activeCategory === "All" || product.category === activeCategory;
     const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           product.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -44,9 +54,51 @@ export default function InventoryPage() {
     return matchesCategory && matchesSearch && matchesStatus;
   });
 
-  const totalProducts = inventoryData.length;
-  const lowStockCount = inventoryData.filter(p => p.stock > 0 && p.stock < 15).length;
-  const outOfStockCount = inventoryData.filter(p => p.stock === 0).length;
+  const totalProducts = inventory.length;
+  const lowStockCount = inventory.filter(p => p.stock > 0 && p.stock < 15).length;
+  const outOfStockCount = inventory.filter(p => p.stock === 0).length;
+
+  const handleAddSubmit = () => {
+    const newProduct = {
+      id: `P-${100 + inventory.length + 1}`,
+      image: "https://placehold.co/80x80/cbd5e1/FFFFFF?text=New",
+      title: formData.title,
+      category: formData.category,
+      sku: formData.sku,
+      stock: formData.stock,
+      unitPrice: formData.unitPrice,
+      sellingPrice: formData.sellingPrice
+    };
+    setInventory([newProduct, ...inventory]);
+    setAddProductModal(false);
+    setFormData({ title: "", category: "Accessories", sku: "", unitPrice: 0, sellingPrice: 0, stock: 0 });
+  };
+
+  const handleEditSubmit = () => {
+    setInventory(inventory.map(p => p.id === selectedProduct.id ? { ...p, title: formData.title, category: formData.category, sku: formData.sku, unitPrice: formData.unitPrice, sellingPrice: formData.sellingPrice, stock: formData.stock } : p));
+    setEditProductModal(false);
+  };
+
+  const handleDeleteConfirm = () => {
+    setInventory(inventory.filter(p => p.id !== selectedProduct.id));
+    setDeleteModal(false);
+  };
+
+  const openEdit = (p: any) => {
+    setSelectedProduct(p);
+    setFormData({ title: p.title, category: p.category, sku: p.sku, unitPrice: p.unitPrice, sellingPrice: p.sellingPrice, stock: p.stock });
+    setEditProductModal(true);
+  };
+
+  const openView = (p: any) => {
+    setSelectedProduct(p);
+    setViewProductModal(true);
+  };
+
+  const openDelete = (p: any) => {
+    setSelectedProduct(p);
+    setDeleteModal(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -130,14 +182,20 @@ export default function InventoryPage() {
           </div>
         </div>
 
-        <Button onClick={() => setAddProductModal(true)} className="bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90 text-white font-semibold w-full md:w-auto shrink-0">
+        <Button 
+          onClick={() => {
+            setFormData({ title: "", category: "Accessories", sku: "", unitPrice: 0, sellingPrice: 0, stock: 0 });
+            setAddProductModal(true);
+          }} 
+          className="bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90 text-white font-semibold w-full md:w-auto shrink-0"
+        >
           <Plus size={18} className="mr-2" /> {t("addNew")} Product
         </Button>
       </div>
 
       {/* Product Data Table */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto w-full">
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
@@ -184,10 +242,13 @@ export default function InventoryPage() {
                     <TableCell className="text-right font-bold text-[var(--color-ocean-blue)]">${product.sellingPrice.toFixed(2)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-[var(--color-aqua)]">
+                        <Button onClick={() => openView(product)} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-[var(--color-ocean-blue)]">
+                          <Eye size={16} />
+                        </Button>
+                        <Button onClick={() => openEdit(product)} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-[var(--color-aqua)]">
                           <Edit size={16} />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red-500">
+                        <Button onClick={() => openDelete(product)} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red-500">
                           <Trash2 size={16} />
                         </Button>
                       </div>
@@ -217,36 +278,141 @@ export default function InventoryPage() {
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Product Title</label>
-              <Input placeholder="e.g. Fast Charger 20W" />
+              <Input value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} placeholder="e.g. Fast Charger 20W" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Category</label>
-                <Input placeholder="e.g. Chargers" />
+                <Input value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} placeholder="e.g. Chargers" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">SKU</label>
-                <Input placeholder="e.g. CHG-20W" />
+                <Input value={formData.sku} onChange={e => setFormData({...formData, sku: e.target.value})} placeholder="e.g. CHG-20W" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Unit Price</label>
-                <Input type="number" placeholder="0.00" />
+                <Input type="number" value={formData.unitPrice || ''} onChange={e => setFormData({...formData, unitPrice: Number(e.target.value)})} placeholder="0.00" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Selling Price</label>
-                <Input type="number" placeholder="0.00" />
+                <Input type="number" value={formData.sellingPrice || ''} onChange={e => setFormData({...formData, sellingPrice: Number(e.target.value)})} placeholder="0.00" />
               </div>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Initial Stock</label>
-              <Input type="number" placeholder="0" />
+              <Input type="number" value={formData.stock || ''} onChange={e => setFormData({...formData, stock: Number(e.target.value)})} placeholder="0" />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddProductModal(false)}>Cancel</Button>
-            <Button onClick={() => setAddProductModal(false)} className="bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90">Save Product</Button>
+            <Button onClick={handleAddSubmit} className="bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90">Save Product</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Product Modal */}
+      <Dialog open={editProductModal} onOpenChange={setEditProductModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Edit Product</DialogTitle>
+            <DialogDescription>
+              Update the details for {selectedProduct?.title}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Product Title</label>
+              <Input value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Category</label>
+                <Input value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">SKU</label>
+                <Input value={formData.sku} onChange={e => setFormData({...formData, sku: e.target.value})} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Unit Price</label>
+                <Input type="number" value={formData.unitPrice} onChange={e => setFormData({...formData, unitPrice: Number(e.target.value)})} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Selling Price</label>
+                <Input type="number" value={formData.sellingPrice} onChange={e => setFormData({...formData, sellingPrice: Number(e.target.value)})} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Stock</label>
+              <Input type="number" value={formData.stock} onChange={e => setFormData({...formData, stock: Number(e.target.value)})} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditProductModal(false)}>Cancel</Button>
+            <Button onClick={handleEditSubmit} className="bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90">Update Product</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Product Details Modal */}
+      <Dialog open={viewProductModal} onOpenChange={setViewProductModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Product Details</DialogTitle>
+          </DialogHeader>
+          {selectedProduct && (
+            <div className="py-4 space-y-4">
+              <div className="flex items-center gap-4 border-b pb-4">
+                <img src={selectedProduct.image} alt={selectedProduct.title} className="w-16 h-16 rounded-md object-cover bg-slate-100" />
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">{selectedProduct.title}</h3>
+                  <p className="text-sm text-slate-500">{selectedProduct.id} • {selectedProduct.sku}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 p-3 rounded-lg">
+                  <p className="text-xs text-slate-500 mb-1">Category</p>
+                  <p className="font-bold text-slate-900">{selectedProduct.category}</p>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-lg">
+                  <p className="text-xs text-slate-500 mb-1">Stock</p>
+                  <p className="font-bold text-slate-900">{selectedProduct.stock} Units</p>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-lg">
+                  <p className="text-xs text-slate-500 mb-1">Unit Price</p>
+                  <p className="font-bold text-slate-900">${selectedProduct.unitPrice.toFixed(2)}</p>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-lg">
+                  <p className="text-xs text-slate-500 mb-1">Selling Price</p>
+                  <p className="font-bold text-[var(--color-ocean-blue)] text-lg">${selectedProduct.sellingPrice.toFixed(2)}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewProductModal(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={deleteModal} onOpenChange={setDeleteModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl text-red-600 flex items-center gap-2">
+              <Trash2 size={20} /> Confirm Deletion
+            </DialogTitle>
+            <DialogDescription className="pt-2">
+              Are you sure you want to delete <strong className="text-slate-900">{selectedProduct?.title}</strong>? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setDeleteModal(false)}>Cancel</Button>
+            <Button onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700 text-white">Delete Permanently</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

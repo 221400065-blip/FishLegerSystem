@@ -2,7 +2,7 @@
 import { useLanguage } from "@/lib/LanguageContext";
 
 import { useState } from "react";
-import { Search, Plus, Edit, Trash2, ChevronLeft, ChevronRight, DollarSign, Users, CreditCard } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Eye, ChevronLeft, ChevronRight, DollarSign, Users, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
@@ -11,7 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 
-const allCustomers = [
+const initialCustomers = [
   { id: "C-001", name: "Ahmed Khan", phone: "+92 300 1234567", billed: 12450.00, paid: 10000.00, status: "Active" },
   { id: "C-002", name: "Ali Raza", phone: "+92 321 7654321", billed: 3800.00, paid: 3800.00, status: "Active" },
   { id: "C-003", name: "Zara Malik", phone: "+92 333 9876543", billed: 45600.00, paid: 40000.00, status: "Active" },
@@ -22,12 +22,22 @@ const allCustomers = [
 
 export default function CustomersPage() {
   const { t } = useLanguage();
+  const [customers, setCustomers] = useState(initialCustomers);
   const [activeTab, setActiveTab] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [activePage, setActivePage] = useState(1);
+  
+  // Modals state
   const [addCustomerModal, setAddCustomerModal] = useState(false);
+  const [editCustomerModal, setEditCustomerModal] = useState(false);
+  const [viewCustomerModal, setViewCustomerModal] = useState(false);
+  const [deleteModal, setDeleteModal] = useState(false);
+  
+  // Form and selected item state
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [formData, setFormData] = useState({ name: "", phone: "", status: "Active" });
 
-  const filteredCustomers = allCustomers.filter(customer => {
+  const filteredCustomers = customers.filter(customer => {
     const matchesTab = activeTab === "All" || customer.status === activeTab;
     const matchesSearch = customer.name.toLowerCase().includes(searchQuery.toLowerCase()) || customer.id.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesTab && matchesSearch;
@@ -37,7 +47,45 @@ export default function CustomersPage() {
   const totalActive = filteredCustomers.filter(c => c.status === "Active").length;
   const totalOutstanding = filteredCustomers.reduce((sum, c) => sum + (c.billed - c.paid), 0); 
 
+  const handleAddSubmit = () => {
+    const newCustomer = {
+      id: `C-00${customers.length + 1}`,
+      name: formData.name,
+      phone: formData.phone,
+      billed: 0,
+      paid: 0,
+      status: formData.status
+    };
+    setCustomers([newCustomer, ...customers]);
+    setAddCustomerModal(false);
+    setFormData({ name: "", phone: "", status: "Active" });
+  };
 
+  const handleEditSubmit = () => {
+    setCustomers(customers.map(c => c.id === selectedCustomer.id ? { ...c, name: formData.name, phone: formData.phone, status: formData.status } : c));
+    setEditCustomerModal(false);
+  };
+
+  const handleDeleteConfirm = () => {
+    setCustomers(customers.filter(c => c.id !== selectedCustomer.id));
+    setDeleteModal(false);
+  };
+
+  const openEdit = (c: any) => {
+    setSelectedCustomer(c);
+    setFormData({ name: c.name, phone: c.phone, status: c.status });
+    setEditCustomerModal(true);
+  };
+
+  const openView = (c: any) => {
+    setSelectedCustomer(c);
+    setViewCustomerModal(true);
+  };
+
+  const openDelete = (c: any) => {
+    setSelectedCustomer(c);
+    setDeleteModal(true);
+  };
   return (
     <div className="space-y-6">
       
@@ -51,7 +99,13 @@ export default function CustomersPage() {
           <Badge variant="secondary" className="bg-[var(--color-aqua)]/10 text-[var(--color-ocean-blue)] text-sm px-3 py-1">
             {filteredCustomers.length} Total
           </Badge>
-          <Button onClick={() => setAddCustomerModal(true)} className="bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90 text-white font-semibold">
+          <Button 
+            onClick={() => {
+              setFormData({ name: "", phone: "", status: "Active" });
+              setAddCustomerModal(true);
+            }} 
+            className="bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90 text-white font-semibold"
+          >
             <Plus size={18} className="mr-2" /> Add New Customer
           </Button>
         </div>
@@ -133,7 +187,7 @@ export default function CustomersPage() {
 
       {/* Data Table */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto w-full">
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
@@ -188,10 +242,13 @@ export default function CustomersPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-[var(--color-aqua)]">
+                          <Button onClick={() => openView(customer)} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-[var(--color-ocean-blue)]">
+                            <Eye size={16} />
+                          </Button>
+                          <Button onClick={() => openEdit(customer)} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-[var(--color-aqua)]">
                             <Edit size={16} />
                           </Button>
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red-500">
+                          <Button onClick={() => openDelete(customer)} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red-500">
                             <Trash2 size={16} />
                           </Button>
                         </div>
@@ -214,7 +271,7 @@ export default function CustomersPage() {
         {/* Pagination */}
         <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-between bg-slate-50/50">
           <p className="text-sm text-slate-500 font-medium">
-            Showing <strong className="text-slate-900">{filteredCustomers.length}</strong> of <strong className="text-slate-900">{allCustomers.length}</strong> customers
+            Showing <strong className="text-slate-900">{filteredCustomers.length}</strong> of <strong className="text-slate-900">{customers.length}</strong> customers
           </p>
           <div className="flex items-center gap-1">
             <Button 
@@ -262,23 +319,115 @@ export default function CustomersPage() {
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Customer Name</label>
-              <Input placeholder="e.g. John Doe" />
+              <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="e.g. John Doe" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Phone Number</label>
-              <Input placeholder="e.g. +92 300 1234567" />
+              <Input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="e.g. +92 300 1234567" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Status</label>
               <div className="flex gap-2">
-                <Button variant="outline" className="bg-green-50 text-green-700 border-green-200">Active</Button>
-                <Button variant="outline" className="bg-slate-50 text-slate-600">Inactive</Button>
+                <Button onClick={() => setFormData({...formData, status: "Active"})} variant={formData.status === "Active" ? "default" : "outline"} className={formData.status === "Active" ? "bg-green-600 hover:bg-green-700" : ""}>Active</Button>
+                <Button onClick={() => setFormData({...formData, status: "Inactive"})} variant={formData.status === "Inactive" ? "default" : "outline"} className={formData.status === "Inactive" ? "bg-slate-600 hover:bg-slate-700" : ""}>Inactive</Button>
               </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddCustomerModal(false)}>Cancel</Button>
-            <Button onClick={() => setAddCustomerModal(false)} className="bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90">Save Customer</Button>
+            <Button onClick={handleAddSubmit} className="bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90">Save Customer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Customer Modal */}
+      <Dialog open={editCustomerModal} onOpenChange={setEditCustomerModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Edit Customer</DialogTitle>
+            <DialogDescription>
+              Update the details for {selectedCustomer?.name}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Customer Name</label>
+              <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Phone Number</label>
+              <Input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Status</label>
+              <div className="flex gap-2">
+                <Button onClick={() => setFormData({...formData, status: "Active"})} variant={formData.status === "Active" ? "default" : "outline"} className={formData.status === "Active" ? "bg-green-600 hover:bg-green-700 text-white" : ""}>Active</Button>
+                <Button onClick={() => setFormData({...formData, status: "Inactive"})} variant={formData.status === "Inactive" ? "default" : "outline"} className={formData.status === "Inactive" ? "bg-slate-600 hover:bg-slate-700 text-white" : ""}>Inactive</Button>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditCustomerModal(false)}>Cancel</Button>
+            <Button onClick={handleEditSubmit} className="bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90">Update Customer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Customer Details Modal */}
+      <Dialog open={viewCustomerModal} onOpenChange={setViewCustomerModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Customer Details</DialogTitle>
+          </DialogHeader>
+          {selectedCustomer && (
+            <div className="py-4 space-y-4">
+              <div className="flex items-center gap-4 border-b pb-4">
+                <Avatar className="h-16 w-16 bg-[var(--color-ocean-blue)]/5">
+                  <AvatarFallback className="text-[var(--color-ocean-blue)] font-bold text-xl bg-transparent">
+                    {selectedCustomer.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">{selectedCustomer.name}</h3>
+                  <p className="text-sm text-slate-500">{selectedCustomer.id} • {selectedCustomer.phone}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 p-3 rounded-lg">
+                  <p className="text-xs text-slate-500 mb-1">Total Billed</p>
+                  <p className="font-bold text-slate-900">${selectedCustomer.billed.toLocaleString()}</p>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-lg">
+                  <p className="text-xs text-slate-500 mb-1">Amount Paid</p>
+                  <p className="font-bold text-green-600">${selectedCustomer.paid.toLocaleString()}</p>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-lg col-span-2">
+                  <p className="text-xs text-slate-500 mb-1">Outstanding Balance</p>
+                  <p className="font-bold text-orange-600 text-lg">${(selectedCustomer.billed - selectedCustomer.paid).toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewCustomerModal(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={deleteModal} onOpenChange={setDeleteModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl text-red-600 flex items-center gap-2">
+              <Trash2 size={20} /> Confirm Deletion
+            </DialogTitle>
+            <DialogDescription className="pt-2">
+              Are you sure you want to delete <strong className="text-slate-900">{selectedCustomer?.name}</strong>? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setDeleteModal(false)}>Cancel</Button>
+            <Button onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700 text-white">Delete Permanently</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

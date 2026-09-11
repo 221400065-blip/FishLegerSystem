@@ -19,7 +19,7 @@ const recentOrders = [
 ];
 
 export default function DashboardPage() {
-  const { t, timeFilter } = useLanguage();
+  const { t, selectedDate } = useLanguage();
   const [salesModalOpen, setSalesModalOpen] = useState(false);
   const [profitModalOpen, setProfitModalOpen] = useState(false);
 
@@ -29,13 +29,9 @@ export default function DashboardPage() {
     "This Month": { sales: "$320,500", suppliers: 15, profit: "$74,000", salesChange: "+22% from last month", suppliersChange: "+4 active", profitChange: "+8% margin" }
   };
 
-  const currentMetrics = metrics[timeFilter as keyof typeof metrics] || metrics["Today"];
+  const currentMetrics = metrics["Today"];
   
-  const getHeaderPrefix = () => {
-    if (timeFilter === "This Week") return "THIS WEEK'S";
-    if (timeFilter === "This Month") return "THIS MONTH'S";
-    return "TODAY'S";
-  };
+  const formattedDate = new Date(selectedDate).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' });
 
   return (
     <div className="space-y-6">
@@ -63,7 +59,7 @@ export default function DashboardPage() {
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">{getHeaderPrefix()} SALES</p>
+                  <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">SALES ON {formattedDate}</p>
                   <h2 className="text-3xl font-bold text-slate-900">{currentMetrics.sales}</h2>
                 </div>
                 <div className="w-10 h-10 bg-[var(--color-aqua)]/10 text-[var(--color-aqua)] rounded-full flex items-center justify-center">
@@ -105,7 +101,7 @@ export default function DashboardPage() {
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">{getHeaderPrefix()} PROFIT</p>
+                  <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">PROFIT ON {formattedDate}</p>
                   <h2 className="text-3xl font-bold text-slate-900">{currentMetrics.profit}</h2>
                 </div>
                 <div className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
@@ -130,7 +126,7 @@ export default function DashboardPage() {
             <p className="text-sm text-slate-500">{t("revenueAcrossCustomers")}</p>
           </CardHeader>
           <CardContent>
-            <SalesTrendsChart timeFilter={timeFilter} />
+            <SalesTrendsChart timeFilter={selectedDate} />
           </CardContent>
         </Card>
 
@@ -151,7 +147,7 @@ export default function DashboardPage() {
       <Dialog open={salesModalOpen} onOpenChange={setSalesModalOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Sales Breakdown ({timeFilter})</DialogTitle>
+            <DialogTitle>Sales Breakdown ({formattedDate})</DialogTitle>
             <DialogDescription>Detailed view of your sales metrics.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -178,7 +174,7 @@ export default function DashboardPage() {
       <Dialog open={profitModalOpen} onOpenChange={setProfitModalOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Profit Breakdown ({timeFilter})</DialogTitle>
+            <DialogTitle>Profit Breakdown ({formattedDate})</DialogTitle>
             <DialogDescription>Detailed view of your profit margins.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">

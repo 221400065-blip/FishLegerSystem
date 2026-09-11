@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 export default function SettingsPage() {
-  const { t, customerBillFormat, setCustomerBillFormat, supplierBillFormat, setSupplierBillFormat } = useLanguage();
+  const { t, customerBillFormat, setCustomerBillFormat, supplierBillFormat, setSupplierBillFormat, language, setLanguage: setGlobalLanguage, theme, setTheme } = useLanguage();
   const [activeTab, setActiveTab] = useState("General");
   
   // Security State
@@ -25,16 +25,7 @@ export default function SettingsPage() {
   ]);
   
   // Appearance State
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [activeColorTheme, setActiveColorTheme] = useState("aqua");
-
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [isDarkMode]);
 
   const handleUpdatePassword = () => {
     alert("Password successfully updated!");
@@ -107,6 +98,13 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Contact Number</label>
                   <input type="text" className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-aqua)]" defaultValue="+92 300 0000000" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Language</label>
+                  <div className="flex gap-4">
+                    <button onClick={() => setGlobalLanguage('en')} className={`px-4 py-2 border rounded-lg ${language === 'en' ? 'border-[var(--color-aqua)] bg-[var(--color-aqua)]/10 text-[var(--color-ocean-blue)] font-bold' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>English</button>
+                    <button onClick={() => setGlobalLanguage('ur')} className={`px-4 py-2 border rounded-lg ${language === 'ur' ? 'border-[var(--color-aqua)] bg-[var(--color-aqua)]/10 text-[var(--color-ocean-blue)] font-bold' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>اردو (Urdu)</button>
+                  </div>
                 </div>
               </div>
 
@@ -221,7 +219,7 @@ export default function SettingsPage() {
                 <h2 className="text-lg font-bold text-slate-900">User & Roles</h2>
                 <p className="text-sm text-slate-500">Manage system users and their access levels.</p>
               </div>
-              <div className="border border-slate-200 rounded-xl overflow-hidden">
+              <div className="border border-slate-200 rounded-xl overflow-hidden overflow-x-auto w-full">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-slate-50/50">
@@ -240,8 +238,12 @@ export default function SettingsPage() {
                         <TableCell><Badge className={u.role === 'Super Admin' ? "bg-[var(--color-ocean-blue)] text-white" : "bg-slate-100 text-slate-800 border"}>{u.role}</Badge></TableCell>
                         <TableCell className="text-slate-600">{u.joined}</TableCell>
                         <TableCell className="text-right">
-                          <button className="p-1 text-slate-400 hover:text-[var(--color-aqua)] mr-1"><Edit size={16}/></button>
-                          <button className="p-1 text-slate-400 hover:text-red-500"><Trash2 size={16}/></button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-[var(--color-aqua)]">
+                            <Edit size={16}/>
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500">
+                            <Trash2 size={16}/>
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -346,8 +348,8 @@ export default function SettingsPage() {
                   <div className="flex items-center justify-between py-2 p-4 border border-slate-200 rounded-xl">
                     <span className="text-sm font-medium text-slate-700">Enable Dark Mode</span>
                     <div className="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
-                        <input type="checkbox" checked={isDarkMode} onChange={(e) => setIsDarkMode(e.target.checked)} className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 border-slate-200 appearance-none cursor-pointer checked:right-0 checked:border-[var(--color-aqua)] checked:bg-[var(--color-aqua)] transition-all"/>
-                        <label className="toggle-label block overflow-hidden h-5 rounded-full bg-slate-200 cursor-pointer" onClick={() => setIsDarkMode(!isDarkMode)}></label>
+                        <input type="checkbox" checked={theme === 'dark'} onChange={(e) => setTheme(e.target.checked ? 'dark' : 'light')} className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 border-slate-200 appearance-none cursor-pointer checked:right-0 checked:border-[var(--color-aqua)] checked:bg-[var(--color-aqua)] transition-all"/>
+                        <label className="toggle-label block overflow-hidden h-5 rounded-full bg-slate-200 cursor-pointer" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}></label>
                     </div>
                   </div>
                 </div>

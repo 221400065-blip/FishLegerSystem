@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, MoreHorizontal } from "lucide-react";
+import { Plus, Eye, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -57,6 +57,7 @@ export default function ExpensesPage() {
               <Plus size={16} className="mr-1" /> Add Expense
             </Button>
           </div>
+          <div className="overflow-x-auto w-full">
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50/50">
@@ -75,14 +76,23 @@ export default function ExpensesPage() {
                     <TableCell>{expense.category}</TableCell>
                     <TableCell className="text-right font-semibold text-slate-900 pr-12">${expense.amount.toFixed(2)}</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-900 bg-slate-900 rounded-md text-white hover:bg-slate-800 hover:text-white" onClick={(e) => { e.stopPropagation(); setSelectedExpense(expense); setIsDetailModalOpen(true); }}>
-                        <MoreHorizontal size={16} />
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-[var(--color-ocean-blue)]" onClick={(e) => { e.stopPropagation(); setSelectedExpense(expense); setIsDetailModalOpen(true); }}>
+                          <Eye size={16} />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-[var(--color-aqua)]">
+                          <Edit size={16} />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500">
+                          <Trash2 size={16} />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+          </div>
           </div>
       </div>
 

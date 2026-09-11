@@ -134,10 +134,10 @@ export default function POSPage() {
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex overflow-hidden p-4 gap-4">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden p-4 gap-4">
         
         {/* Column 1: Customer & Product Catalog */}
-        <div className="w-1/3 flex flex-col gap-4">
+        <div className="w-full lg:w-1/3 flex flex-col gap-4 shrink-0">
           
           {/* Customer Selection */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col shrink-0">
@@ -207,7 +207,7 @@ export default function POSPage() {
         </div>
 
         {/* Column 2: Active Billing Cart */}
-        <div className="w-[38%] bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col">
+        <div className="w-full lg:w-[38%] min-h-[500px] lg:min-h-0 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col shrink-0">
           <div className="p-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-slate-50/50 rounded-t-xl">
             <div>
               <p className="text-xs text-slate-500 font-medium">{t("billingTo")}</p>
@@ -298,7 +298,7 @@ export default function POSPage() {
         </div>
 
         {/* Column 3: Multi-Customer Order Summary & Grand Total */}
-        <div className="w-[28%] flex flex-col gap-4">
+        <div className="w-full lg:w-[28%] flex flex-col gap-4 shrink-0">
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 flex flex-col">
              <div className="p-4 border-b border-slate-100">
                <h2 className="font-bold text-slate-900">{t("activeSessions")}</h2>
