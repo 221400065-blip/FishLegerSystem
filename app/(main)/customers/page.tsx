@@ -11,18 +11,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 
-const initialCustomers = [
-  { id: "C-001", name: "Ahmed Khan", phone: "+92 300 1234567", billed: 12450.00, paid: 10000.00, status: "Active" },
-  { id: "C-002", name: "Ali Raza", phone: "+92 321 7654321", billed: 3800.00, paid: 3800.00, status: "Active" },
-  { id: "C-003", name: "Zara Malik", phone: "+92 333 9876543", billed: 45600.00, paid: 40000.00, status: "Active" },
-  { id: "C-004", name: "Sana Hussain", phone: "+92 345 1122334", billed: 150.00, paid: 0.00, status: "Inactive" },
-  { id: "C-005", name: "Bilal Ahmed", phone: "+92 300 5566778", billed: 8900.00, paid: 8900.00, status: "Active" },
-  { id: "C-006", name: "Nadia Shah", phone: "+92 311 9988776", billed: 620.00, paid: 500.00, status: "Inactive" },
-];
-
 export default function CustomersPage() {
-  const { t } = useLanguage();
-  const [customers, setCustomers] = useState(initialCustomers);
+  const { t, customers, addCustomer, updateCustomer, deleteCustomer } = useLanguage();
   const [activeTab, setActiveTab] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [activePage, setActivePage] = useState(1);
@@ -43,9 +33,9 @@ export default function CustomersPage() {
     return matchesTab && matchesSearch;
   });
 
-  const totalRevenue = filteredCustomers.reduce((sum, c) => sum + c.billed, 0);
+  const totalRevenue = filteredCustomers.reduce((sum, c) => sum + (c.billed || 0), 0);
   const totalActive = filteredCustomers.filter(c => c.status === "Active").length;
-  const totalOutstanding = filteredCustomers.reduce((sum, c) => sum + (c.billed - c.paid), 0); 
+  const totalOutstanding = filteredCustomers.reduce((sum, c) => sum + ((c.billed || 0) - (c.paid || 0)), 0); 
 
   const handleAddSubmit = () => {
     const newCustomer = {
@@ -56,18 +46,22 @@ export default function CustomersPage() {
       paid: 0,
       status: formData.status
     };
-    setCustomers([newCustomer, ...customers]);
+    addCustomer(newCustomer);
     setAddCustomerModal(false);
     setFormData({ name: "", phone: "", status: "Active" });
   };
 
   const handleEditSubmit = () => {
-    setCustomers(customers.map(c => c.id === selectedCustomer.id ? { ...c, name: formData.name, phone: formData.phone, status: formData.status } : c));
+    if (selectedCustomer) {
+      updateCustomer({ ...selectedCustomer, name: formData.name, phone: formData.phone, status: formData.status });
+    }
     setEditCustomerModal(false);
   };
 
   const handleDeleteConfirm = () => {
-    setCustomers(customers.filter(c => c.id !== selectedCustomer.id));
+    if (selectedCustomer) {
+      deleteCustomer(selectedCustomer.id);
+    }
     setDeleteModal(false);
   };
 
@@ -220,13 +214,13 @@ export default function CustomersPage() {
                       </TableCell>
                       <TableCell className="text-slate-600">{customer.phone}</TableCell>
                       <TableCell className="text-right font-medium text-slate-900">
-                        ${customer.billed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        ${(customer.billed || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </TableCell>
                       <TableCell className="text-right font-medium text-slate-600">
-                        ${customer.paid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        ${(customer.paid || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </TableCell>
-                      <TableCell className={`text-right font-bold ${customer.billed - customer.paid > 0 ? 'text-orange-600' : 'text-slate-900'}`}>
-                        ${(customer.billed - customer.paid).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <TableCell className={`text-right font-bold ${(customer.billed || 0) - (customer.paid || 0) > 0 ? 'text-orange-600' : 'text-slate-900'}`}>
+                        ${((customer.billed || 0) - (customer.paid || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge 
@@ -395,15 +389,15 @@ export default function CustomersPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-slate-50 p-3 rounded-lg">
                   <p className="text-xs text-slate-500 mb-1">Total Billed</p>
-                  <p className="font-bold text-slate-900">${selectedCustomer.billed.toLocaleString()}</p>
+                  <p className="font-bold text-slate-900">${(selectedCustomer.billed || 0).toLocaleString()}</p>
                 </div>
                 <div className="bg-slate-50 p-3 rounded-lg">
                   <p className="text-xs text-slate-500 mb-1">Amount Paid</p>
-                  <p className="font-bold text-green-600">${selectedCustomer.paid.toLocaleString()}</p>
+                  <p className="font-bold text-green-600">${(selectedCustomer.paid || 0).toLocaleString()}</p>
                 </div>
                 <div className="bg-slate-50 p-3 rounded-lg col-span-2">
                   <p className="text-xs text-slate-500 mb-1">Outstanding Balance</p>
-                  <p className="font-bold text-orange-600 text-lg">${(selectedCustomer.billed - selectedCustomer.paid).toLocaleString()}</p>
+                  <p className="font-bold text-orange-600 text-lg">${((selectedCustomer.billed || 0) - (selectedCustomer.paid || 0)).toLocaleString()}</p>
                 </div>
               </div>
             </div>

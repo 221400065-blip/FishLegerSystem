@@ -19,12 +19,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-const customers = [
-  { id: "C-001", name: "Ahmed Traders" },
-  { id: "C-002", name: "Ali Electronics" },
-  { id: "C-003", name: "Zara Imports" },
-];
-
 const products = [
   { id: "P-101", name: "Samsung 65W Charger", category: "Chargers", price: 45.00, discount: "15% OFF", image: "https://placehold.co/80x80/06B6D4/FFFFFF?text=65W" },
   { id: "P-102", name: "iPhone Cable 2M", category: "Cables", price: 25.00, discount: null, image: "https://placehold.co/80x80/f97316/FFFFFF?text=2M" },
@@ -33,14 +27,14 @@ const products = [
 ];
 
 export default function POSPage() {
-  const { t, customerBillFormat } = useLanguage();
+  const { t, customerBillFormat, customers, addCustomer } = useLanguage();
   const router = useRouter();
   const [completeSaleModal, setCompleteSaleModal] = useState(false);
   const [payAllModal, setPayAllModal] = useState(false);
   const [addCustomerModal, setAddCustomerModal] = useState(false);
   const [activeTab, setActiveTab] = useState("All");
-  const [applyCommission, setApplyCommission] = useState(false);
-  const [commissionRate, setCommissionRate] = useState(8);
+  const [mobileTab, setMobileTab] = useState<"products" | "cart" | "summary">("products");
+  const commissionRate = 8; // Fixed strictly at 8%
 
   const [activeCustomerId, setActiveCustomerId] = useState("C-001");
   const [carts, setCarts] = useState<Record<string, any[]>>({
@@ -58,9 +52,58 @@ export default function POSPage() {
   const activeCustomer = customers.find(c => c.id === activeCustomerId) || customers[0];
   const activeCart = carts[activeCustomerId] || [];
 
+  const handleAddToCart = (product: any) => {
+    setCarts(prev => {
+      const cart = prev[activeCustomerId] || [];
+      const existing = cart.find(i => i.id === product.id);
+      if (existing) {
+        return {
+          ...prev,
+          [activeCustomerId]: cart.map(i => i.id === product.id ? { ...i, qty: i.qty + 1, total: (i.qty + 1) * i.price } : i)
+        };
+      }
+      return {
+        ...prev,
+        [activeCustomerId]: [...cart, { id: product.id, name: product.name, price: product.price, qty: 1, total: product.price }]
+      };
+    });
+  };
+
+  const handleQtyChange = (itemId: string, newQty: number) => {
+    if (newQty < 1) return;
+    setCarts(prev => {
+      const cart = prev[activeCustomerId] || [];
+      return {
+        ...prev,
+        [activeCustomerId]: cart.map(i => i.id === itemId ? { ...i, qty: newQty, total: newQty * i.price } : i)
+      };
+    });
+  };
+
+  const handlePriceChange = (itemId: string, newPrice: number) => {
+    if (newPrice < 0) return;
+    setCarts(prev => {
+      const cart = prev[activeCustomerId] || [];
+      return {
+        ...prev,
+        [activeCustomerId]: cart.map(i => i.id === itemId ? { ...i, price: newPrice, total: i.qty * newPrice } : i)
+      };
+    });
+  };
+
+  const handleRemoveItem = (itemId: string) => {
+    setCarts(prev => {
+      const cart = prev[activeCustomerId] || [];
+      return {
+        ...prev,
+        [activeCustomerId]: cart.filter(i => i.id !== itemId)
+      };
+    });
+  };
+
   const subtotal = activeCart.reduce((sum, item) => sum + item.total, 0);
   const commission = subtotal * (commissionRate / 100);
-  const customerTotal = applyCommission ? subtotal + commission : subtotal;
+  const customerTotal = subtotal + commission;
 
   const totalActiveSessions = Object.values(carts).filter(cart => cart.length > 0).length;
   const combinedSubtotal = Object.values(carts).reduce((sum, cart) => sum + cart.reduce((s, i) => s + i.total, 0), 0);
@@ -78,9 +121,20 @@ export default function POSPage() {
       document.body.classList.remove("print-thermal");
     }window.print();
   };
+  const [newCustomerData, setNewCustomerData] = useState({ name: "", phone: "" });
+
+  const handleAddCustomerSubmit = () => {
+    if (!newCustomerData.name) return;
+    const newId = `C-00${customers.length + 1}`;
+    addCustomer({ id: newId, name: newCustomerData.name, phone: newCustomerData.phone, billed: 0, paid: 0, status: "Active" });
+    setActiveCustomerId(newId);
+    setAddCustomerModal(false);
+    setNewCustomerData({ name: "", phone: "" });
+  };
 
   return (
-    <div className="min-h-screen bg-[var(--color-canvas)] flex flex-col h-screen overflow-hidden">
+    <>
+    <div className="min-h-[100dvh] bg-[var(--color-canvas)] flex flex-col h-[100dvh] overflow-hidden no-print">
       {/* Top Header */}
       <header className="h-16 bg-[var(--color-ocean-blue)] text-white flex items-center justify-between px-6 shrink-0">
         <div className="flex items-center gap-4">
@@ -103,12 +157,10 @@ export default function POSPage() {
           <p className="text-sm text-slate-300">09 Sep 2026</p>
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-2 border-l border-white/20 pl-6 cursor-pointer focus:outline-none">
-              <div className="w-8 h-8 rounded-full bg-[var(--color-aqua)] flex items-center justify-center font-bold text-sm text-[var(--color-ocean-blue)]">
-                SM
+              <div className="w-8 h-8 rounded-full bg-[var(--color-aqua)] flex items-center justify-center text-white shadow-sm">
+                <User size={16} />
               </div>
-              <p className="text-sm font-medium flex items-center gap-1">
-                Admin <ChevronDown size={14} className="text-slate-300" />
-              </p>
+              <ChevronDown size={14} className="text-slate-300" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuGroup>
@@ -133,11 +185,33 @@ export default function POSPage() {
         </div>
       </header>
 
+      {/* Mobile Tab Navigation (Visible only on small screens) */}
+      <div className="flex lg:hidden bg-white border-b border-slate-200 shrink-0 shadow-sm z-10">
+        <button 
+          onClick={() => setMobileTab("products")} 
+          className={`flex-1 py-3 text-sm font-semibold transition-colors ${mobileTab === 'products' ? 'text-[var(--color-aqua)] border-b-2 border-[var(--color-aqua)] bg-[var(--color-aqua)]/5' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          Products
+        </button>
+        <button 
+          onClick={() => setMobileTab("cart")} 
+          className={`flex-1 py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${mobileTab === 'cart' ? 'text-[var(--color-aqua)] border-b-2 border-[var(--color-aqua)] bg-[var(--color-aqua)]/5' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          Cart <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full text-[10px] leading-none">{activeCart.reduce((s, i) => s + i.qty, 0)}</span>
+        </button>
+        <button 
+          onClick={() => setMobileTab("summary")} 
+          className={`flex-1 py-3 text-sm font-semibold transition-colors ${mobileTab === 'summary' ? 'text-[var(--color-aqua)] border-b-2 border-[var(--color-aqua)] bg-[var(--color-aqua)]/5' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          Summary
+        </button>
+      </div>
+
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden p-4 gap-4">
         
         {/* Column 1: Customer & Product Catalog */}
-        <div className="w-full lg:w-1/3 flex flex-col gap-4 shrink-0">
+        <div className={`w-full lg:w-1/3 flex-col gap-4 shrink-0 ${mobileTab === 'products' ? 'flex' : 'hidden lg:flex'}`}>
           
           {/* Customer Selection */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col shrink-0">
@@ -197,7 +271,7 @@ export default function POSPage() {
                       {p.discount && <Badge variant="secondary" className="bg-orange-100 text-orange-700 text-[9px] px-1 py-0 h-4">{p.discount}</Badge>}
                     </div>
                   </div>
-                  <Button size="icon" className="h-8 w-8 rounded-full bg-slate-100 text-[var(--color-ocean-blue)] hover:bg-[var(--color-aqua)] hover:text-white transition-colors shrink-0">
+                  <Button onClick={() => handleAddToCart(p)} size="icon" className="h-8 w-8 rounded-full bg-slate-100 text-[var(--color-ocean-blue)] hover:bg-[var(--color-aqua)] hover:text-white transition-colors shrink-0">
                     <Plus size={16} />
                   </Button>
                 </div>
@@ -207,8 +281,8 @@ export default function POSPage() {
         </div>
 
         {/* Column 2: Active Billing Cart */}
-        <div className="w-full lg:w-[38%] min-h-[500px] lg:min-h-0 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col shrink-0">
-          <div className="p-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-slate-50/50 rounded-t-xl">
+        <div className={`w-full lg:w-[38%] min-h-[400px] lg:min-h-0 bg-white rounded-xl shadow-sm border border-slate-200 flex-col shrink-0 p-4 md:p-6 ${mobileTab === 'cart' ? 'flex' : 'hidden lg:flex'}`}>
+          <div className="pb-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-slate-50/50 rounded-t-xl -mx-4 md:-mx-6 -mt-4 md:-mt-6 px-4 md:px-6 pt-4 md:pt-6">
             <div>
               <p className="text-xs text-slate-500 font-medium">{t("billingTo")}</p>
               <h2 className="font-bold text-slate-900 flex items-center gap-2">
@@ -218,68 +292,71 @@ export default function POSPage() {
             {/* Action buttons removed as requested */}
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-            <table className="w-full text-sm">
-              <thead className="text-xs text-slate-500 border-b border-slate-100">
+          <div className="flex-1 overflow-y-auto py-4 custom-scrollbar">
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-sm min-w-[300px]">
+                <thead className="text-xs text-slate-500 border-b border-slate-100">
                 <tr>
-                  <th className="font-medium text-left pb-2 w-1/2">PRODUCT</th>
-                  <th className="font-medium text-center pb-2">QTY</th>
-                  <th className="font-medium text-right pb-2">PRICE</th>
+                  <th className="font-medium text-left pb-2 w-2/5">PRODUCT</th>
+                  <th className="font-medium text-center pb-2 w-20">QTY</th>
+                  <th className="font-medium text-right pb-2 w-24">PRICE</th>
+                  <th className="font-medium text-right pb-2">COMM (8%)</th>
                   <th className="font-medium text-right pb-2">TOTAL</th>
                   <th className="font-medium text-right pb-2 w-8"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {activeCart.map(item => (
+                {activeCart.map(item => {
+                  const lineComm = item.total * 0.08;
+                  const grandPrice = item.total + lineComm;
+                  return (
                   <tr key={item.id} className="group">
                     <td className="py-3">
                       <p className="font-medium text-slate-900 truncate pr-2" title={item.name}>{item.name}</p>
                     </td>
-                    <td className="py-3 text-center">
-                      <div className="flex items-center justify-center gap-1 border border-slate-200 rounded-md w-fit mx-auto px-1">
-                        <button className="p-1 hover:text-[var(--color-aqua)] text-slate-500"><Minus size={12} /></button>
-                        <span className="w-4 text-xs font-semibold">{item.qty}</span>
-                        <button className="p-1 hover:text-[var(--color-aqua)] text-slate-500"><Plus size={12} /></button>
+                    <td className="py-3">
+                      <input 
+                        type="number" 
+                        min="1" 
+                        value={item.qty || ''} 
+                        onChange={(e) => handleQtyChange(item.id, Number(e.target.value))}
+                        className="w-16 h-8 border border-slate-200 rounded-md text-center text-xs focus:outline-none focus:border-[var(--color-aqua)] mx-auto block"
+                      />
+                    </td>
+                    <td className="py-3">
+                      <div className="flex items-center justify-end">
+                        <span className="text-slate-500 text-xs mr-1">$</span>
+                        <input 
+                          type="number" 
+                          min="0"
+                          step="0.01" 
+                          value={item.price || ''} 
+                          onChange={(e) => handlePriceChange(item.id, Number(e.target.value))}
+                          className="w-16 h-8 border border-slate-200 rounded-md text-right text-xs px-1 focus:outline-none focus:border-[var(--color-aqua)]"
+                        />
                       </div>
                     </td>
-                    <td className="py-3 text-right text-slate-500">${item.price.toFixed(2)}</td>
-                    <td className="py-3 text-right font-bold text-slate-900">${item.total.toFixed(2)}</td>
+                    <td className="py-3 text-right text-slate-500 text-xs">${lineComm.toFixed(2)}</td>
+                    <td className="py-3 text-right font-bold text-[var(--color-ocean-blue)]">${grandPrice.toFixed(2)}</td>
                     <td className="py-3 text-right">
-                       <button className="text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={14} /></button>
+                       <button onClick={() => handleRemoveItem(item.id)} className="text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
                     </td>
                   </tr>
-                ))}
+                )})}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
 
-          <div className="p-4 border-t border-slate-100 shrink-0 bg-slate-50 rounded-b-xl">
-            <div className="space-y-2 text-sm mb-4">
-              <div className="flex justify-between text-sm">
+          <div className="border-t border-slate-100 shrink-0 pt-4 bg-slate-50/80 -mx-4 md:-mx-6 -mb-4 md:-mb-6 px-4 md:px-6 pb-4 md:pb-6 rounded-b-xl">
+            <div className="space-y-1 pb-3">
+              <div className="flex justify-between text-sm items-center py-1">
                 <span className="text-slate-500">Subtotal (Without Commission)</span>
                 <span className="font-medium text-slate-900">${subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm items-center py-1">
-                <label className="text-slate-500 flex items-center gap-2 cursor-pointer select-none">
-                  <input 
-                    type="checkbox" 
-                    checked={applyCommission} 
-                    onChange={(e) => setApplyCommission(e.target.checked)} 
-                    className="rounded text-[var(--color-aqua)] focus:ring-[var(--color-aqua)] w-4 h-4 cursor-pointer" 
-                  />
-                  Apply Commission (%)
-                </label>
-                {applyCommission && (
-                  <div className="flex items-center gap-2">
-                    <input 
-                      type="number" 
-                      value={commissionRate} 
-                      onChange={(e) => setCommissionRate(Number(e.target.value))} 
-                      className="w-12 h-6 px-1 border border-slate-200 rounded text-right text-xs focus:outline-none focus:border-[var(--color-aqua)]" 
-                    />
-                    <span className="font-medium text-slate-900 w-14 text-right">${commission.toFixed(2)}</span>
-                  </div>
-                )}
+                <span className="text-slate-500">Commission (8%)</span>
+                <span className="font-medium text-slate-900">${commission.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-lg font-bold pt-2 border-t border-slate-200 mt-2">
                 <span className="text-slate-900">Grand Total</span>
@@ -298,7 +375,7 @@ export default function POSPage() {
         </div>
 
         {/* Column 3: Multi-Customer Order Summary & Grand Total */}
-        <div className="w-full lg:w-[28%] flex flex-col gap-4 shrink-0">
+        <div className={`w-full lg:w-[28%] flex-col gap-4 shrink-0 ${mobileTab === 'summary' ? 'flex' : 'hidden lg:flex'}`}>
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 flex flex-col">
              <div className="p-4 border-b border-slate-100">
                <h2 className="font-bold text-slate-900">{t("activeSessions")}</h2>
@@ -378,16 +455,16 @@ export default function POSPage() {
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Customer Name</label>
-              <Input placeholder="e.g. Bilal Traders" />
+              <Input value={newCustomerData.name} onChange={e => setNewCustomerData({...newCustomerData, name: e.target.value})} placeholder="e.g. Bilal Traders" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Contact Number</label>
-              <Input placeholder="+92 300 0000000" />
+              <Input value={newCustomerData.phone} onChange={e => setNewCustomerData({...newCustomerData, phone: e.target.value})} placeholder="+92 300 0000000" />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddCustomerModal(false)}>Cancel</Button>
-            <Button onClick={() => setAddCustomerModal(false)} className="bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90">Add Customer</Button>
+            <Button onClick={handleAddCustomerSubmit} className="bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90 text-white">Add Customer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -428,5 +505,60 @@ export default function POSPage() {
         </DialogContent>
       </Dialog>
     </div>
+
+    {/* Printable Receipt */}
+    <div className="print-only bg-white text-black p-8" id="printable-receipt">
+      <div className="max-w-md mx-auto">
+        <h1 className="text-2xl font-bold text-center mb-2">Invoice / Receipt</h1>
+        <p suppressHydrationWarning className="text-center text-sm text-gray-500 mb-6">Date: {new Date().toLocaleDateString()}</p>
+        
+        <div className="mb-6">
+          <h2 className="font-bold">Billed To:</h2>
+          <p>{activeCustomer?.name}</p>
+          <p className="text-sm text-gray-500">{activeCustomer?.phone || activeCustomer?.id}</p>
+        </div>
+
+        <table className="w-full text-sm mb-6">
+          <thead className="border-b-2 border-black">
+            <tr>
+              <th className="text-left py-2">Item</th>
+              <th className="text-center py-2">Qty</th>
+              <th className="text-right py-2">Price</th>
+              <th className="text-right py-2">Total</th>
+            </tr>
+          </thead>
+          <tbody className="border-b border-gray-300">
+            {activeCart.map((item, i) => (
+              <tr key={i} className="border-b border-gray-100 last:border-0">
+                <td className="py-2">{item.name}</td>
+                <td className="py-2 text-center">{item.qty}</td>
+                <td className="py-2 text-right">${item.price.toFixed(2)}</td>
+                <td className="py-2 text-right">${item.total.toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div className="space-y-2 text-right text-sm">
+          <div className="flex justify-between">
+            <span>Subtotal:</span>
+            <span>${subtotal.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Commission (8%):</span>
+            <span>${commission.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between font-bold text-lg pt-2 border-t-2 border-black mt-2">
+            <span>Grand Total:</span>
+            <span>${customerTotal.toFixed(2)}</span>
+          </div>
+        </div>
+        
+        <div className="mt-10 text-center text-sm text-gray-500">
+          <p>Thank you for your business!</p>
+        </div>
+      </div>
+    </div>
+    </>
   );
 }

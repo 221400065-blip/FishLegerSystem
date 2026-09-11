@@ -182,10 +182,12 @@ const translations = {
   ur,
 };
 
+export type Customer = { id: string; name: string; phone?: string; billed?: number; paid?: number; status?: string; };
+
 interface LanguageContextType {
   language: Language;
+  t: (key: string) => string;
   setLanguage: (lang: Language) => void;
-  t: (key: keyof typeof en) => string;
   selectedDate: string;
   setSelectedDate: (date: string) => void;
   customerBillFormat: "thermal" | "simple";
@@ -200,6 +202,10 @@ interface LanguageContextType {
   markNotificationAsRead: (id: string) => void;
   deleteNotification: (id: string) => void;
   clearAllNotifications: () => void;
+  customers: Customer[];
+  addCustomer: (customer: Customer) => void;
+  updateCustomer: (customer: Customer) => void;
+  deleteCustomer: (id: string) => void;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -218,6 +224,27 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     { id: "3", title: "Payment Received", description: "Payment of $500 received from Zara Malik.", type: "customer", isRead: false, date: "3 hours ago" },
     { id: "4", title: "System Update", description: "Ledger System v2.1 has been installed successfully.", type: "system", isRead: true, date: "1 day ago" }
   ]);
+
+  const [customers, setCustomers] = useState<Customer[]>([
+    { id: "C-001", name: "Ahmed Traders", phone: "+92 300 1234567", billed: 12450.00, paid: 10000.00, status: "Active" },
+    { id: "C-002", name: "Ali Electronics", phone: "+92 321 7654321", billed: 3800.00, paid: 3800.00, status: "Active" },
+    { id: "C-003", name: "Zara Imports", phone: "+92 333 9876543", billed: 45600.00, paid: 40000.00, status: "Active" },
+    { id: "C-004", name: "Sana Hussain", phone: "+92 345 1122334", billed: 150.00, paid: 0.00, status: "Inactive" },
+    { id: "C-005", name: "Bilal Ahmed", phone: "+92 300 5566778", billed: 8900.00, paid: 8900.00, status: "Active" },
+    { id: "C-006", name: "Nadia Shah", phone: "+92 311 9988776", billed: 620.00, paid: 500.00, status: "Inactive" },
+  ]);
+
+  const addCustomer = (customer: Customer) => {
+    setCustomers(prev => [...prev, customer]);
+  };
+
+  const updateCustomer = (customer: Customer) => {
+    setCustomers(prev => prev.map(c => c.id === customer.id ? { ...c, ...customer } : c));
+  };
+
+  const deleteCustomer = (id: string) => {
+    setCustomers(prev => prev.filter(c => c.id !== id));
+  };
 
   const markNotificationAsRead = (id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
@@ -263,7 +290,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       supplierBillFormat, setSupplierBillFormat, 
       isSidebarOpen, setIsSidebarOpen, 
       theme, setTheme,
-      notifications, markNotificationAsRead, deleteNotification, clearAllNotifications
+      notifications, markNotificationAsRead, deleteNotification, clearAllNotifications,
+      customers, addCustomer, updateCustomer, deleteCustomer
     }}>
       <div dir={language === 'ur' ? 'rtl' : 'ltr'}>
         {children}

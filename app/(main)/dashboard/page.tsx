@@ -19,7 +19,7 @@ const recentOrders = [
 ];
 
 export default function DashboardPage() {
-  const { t, selectedDate } = useLanguage();
+  const { t, selectedDate, customers } = useLanguage();
   const [salesModalOpen, setSalesModalOpen] = useState(false);
   const [profitModalOpen, setProfitModalOpen] = useState(false);
 
@@ -79,7 +79,7 @@ export default function DashboardPage() {
       </Link>
 
       {/* Metric Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div onClick={() => setSalesModalOpen(true)} className="cursor-pointer h-full">
           <Card className="rounded-xl shadow-sm border-slate-200 hover:border-[var(--color-aqua)] transition-colors h-full">
             <CardContent className="p-6">
@@ -122,6 +122,27 @@ export default function DashboardPage() {
           </Card>
         </Link>
 
+        <Link href="/customers">
+          <Card className="rounded-xl shadow-sm border-slate-200 hover:border-[var(--color-aqua)] transition-colors cursor-pointer h-full">
+            <CardContent className="p-6">
+              <div className="flex justify-between items-start">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">ACTIVE CUSTOMERS</p>
+                  <h2 className="text-3xl font-bold text-slate-900">{customers.length}</h2>
+                </div>
+                <div className="w-10 h-10 bg-blue-100 text-[var(--color-ocean-blue)] rounded-full flex items-center justify-center">
+                  <ShoppingCart size={20} />
+                </div>
+              </div>
+              <div className="mt-4 flex items-center">
+                <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-md">
+                  Live Sync
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
         <div onClick={() => setProfitModalOpen(true)} className="cursor-pointer h-full">
           <Card className="rounded-xl shadow-sm border-slate-200 hover:border-[var(--color-aqua)] transition-colors h-full">
             <CardContent className="p-6">
@@ -148,8 +169,8 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="col-span-1 lg:col-span-2 rounded-xl shadow-sm border-slate-200">
           <CardHeader className="pb-0">
-            <CardTitle className="text-lg font-bold text-slate-900">{t("salesTrends")}</CardTitle>
-            <p className="text-sm text-slate-500">{t("revenueAcrossCustomers")}</p>
+            <CardTitle className="text-lg font-bold text-slate-900">Sales</CardTitle>
+            <p className="text-sm text-slate-500">Revenue across all customers</p>
           </CardHeader>
           <CardContent>
             <SalesTrendsChart timeFilter={selectedDate} />

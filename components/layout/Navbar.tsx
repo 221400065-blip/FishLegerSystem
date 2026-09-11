@@ -83,9 +83,18 @@ export function Navbar() {
     setIsDatePickerOpen(false);
   };
 
+  const formattedDisplayDate = () => {
+    if (startDate === endDate) {
+      return new Date(startDate).toLocaleDateString("en-US", { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    const d1 = new Date(startDate).toLocaleDateString("en-US", { month: 'short', day: 'numeric' });
+    const d2 = new Date(endDate).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' });
+    return `${d1} ➔ ${d2}`;
+  };
+
   return (
-    <header className="h-auto min-h-[5rem] py-4 md:py-0 md:h-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex flex-wrap md:flex-nowrap items-center justify-between px-4 md:px-8 w-full sticky top-0 z-40 gap-4 transition-colors">
-      <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
+    <header className="h-auto min-h-[5rem] py-4 md:py-0 md:h-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 w-full sticky top-0 z-40 gap-4 transition-colors">
+      <div className="flex items-center gap-4 w-full md:w-1/4 justify-between md:justify-start">
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setIsSidebarOpen(true)}
@@ -97,32 +106,34 @@ export function Navbar() {
         </div>
       </div>
 
-      <div className="flex flex-wrap md:flex-nowrap items-center gap-3 md:gap-6 w-full md:w-auto justify-between md:justify-end">
-        {/* Search Bar */}
-        <div className="relative">
+      {/* Centered Search Bar */}
+      <div className="relative w-full md:w-1/2 max-w-xl flex justify-center">
+         <div className="relative w-full">
            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
            <input 
              type="text" 
-             placeholder={t("searchPlaceholder")}
-             className="pl-10 pr-4 py-2 w-full md:w-64 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-aqua)] transition-all"
+             placeholder="Search invoices, customers, ledger records..."
+             className="pl-10 pr-4 py-2 w-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-aqua)] transition-all"
            />
-        </div>
+         </div>
+      </div>
 
+      <div className="flex flex-wrap md:flex-nowrap items-center gap-3 md:gap-6 w-full md:w-1/4 justify-between md:justify-end">
         {/* FROM - TO Date Range Picker Button */}
-        <div className="relative">
+        <div className="relative flex-1 md:flex-none flex justify-end">
           <button
             type="button"
             onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
-            className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none"
+            className="flex items-center gap-2 px-3 md:px-4 py-2 text-[10px] md:text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none"
           >
-            <Calendar size={15} className="text-cyan-500" />
-            <span>{startDate} ➔ {endDate}</span>
-            <ChevronDown size={14} className="text-slate-400" />
+            <Calendar size={15} className="text-cyan-500 shrink-0" />
+            <span className="truncate max-w-[150px] md:max-w-none">{formattedDisplayDate()}</span>
+            <ChevronDown size={14} className="text-slate-400 shrink-0" />
           </button>
 
           {/* Date Picker Dropdown */}
           {isDatePickerOpen && (
-            <div className="absolute right-0 mt-2 p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-2xl z-50 w-72 space-y-4">
+            <div className="absolute right-0 md:right-auto mt-2 p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-2xl z-50 w-[260px] md:w-72 space-y-4">
               <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-2">
                 <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Date Range Filter</span>
                 <span className="text-[10px] font-semibold text-cyan-500">Select Range</span>
@@ -155,18 +166,18 @@ export function Navbar() {
               </div>
 
               <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
-                <div className="flex gap-2">
+                <div className="flex gap-1 md:gap-2">
                   <button
                     type="button"
                     onClick={handleSetToday}
-                    className="text-[11px] bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 px-2 py-1 rounded-md transition-colors font-medium"
+                    className="text-[10px] md:text-[11px] bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 px-2 py-1 rounded-md transition-colors font-medium"
                   >
                     Today
                   </button>
                   <button
                     type="button"
                     onClick={handleSetThisMonth}
-                    className="text-[11px] bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 px-2 py-1 rounded-md transition-colors font-medium"
+                    className="text-[10px] md:text-[11px] bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 px-2 py-1 rounded-md transition-colors font-medium"
                   >
                     This Month
                   </button>
@@ -175,7 +186,7 @@ export function Navbar() {
                 <button
                   type="button"
                   onClick={handleApplyFilter}
-                  className="bg-cyan-500 hover:bg-cyan-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors shadow-sm"
+                  className="bg-cyan-500 hover:bg-cyan-600 text-white text-xs font-semibold px-2 md:px-3 py-1.5 rounded-lg transition-colors shadow-sm"
                 >
                   Apply
                 </button>
@@ -236,12 +247,11 @@ export function Navbar() {
 
         {/* Admin Menu */}
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-3 border-l border-slate-200 dark:border-slate-800 pl-6 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 p-1 pr-3 rounded-lg transition-colors focus:outline-none">
-            <div>
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                Admin <ChevronDown size={14} className="text-slate-500" />
-              </p>
+          <DropdownMenuTrigger className="flex items-center gap-2 border-l border-slate-200 dark:border-slate-800 pl-6 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 p-1 pr-3 rounded-lg transition-colors focus:outline-none">
+            <div className="w-8 h-8 rounded-full bg-[var(--color-aqua)] flex items-center justify-center text-white shadow-sm">
+              <User size={16} />
             </div>
+            <ChevronDown size={14} className="text-slate-500" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuGroup>

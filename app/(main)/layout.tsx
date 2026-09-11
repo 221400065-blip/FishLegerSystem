@@ -16,7 +16,7 @@ export default function MainLayout({
       <Sidebar />
       <div className={`${isSidebarOpen ? 'md:pl-64 pl-0' : 'md:pl-16 pl-0'} transition-all duration-300 flex flex-col min-h-screen w-full`}>
         <Navbar />
-        <main className="p-4 md:p-8 flex-1 w-full overflow-hidden">
+        <main className="px-4 md:px-6 lg:px-8 py-6 flex-1 w-full overflow-hidden">
           {children}
         </main>
       </div>

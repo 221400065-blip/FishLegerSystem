@@ -143,6 +143,17 @@
     width: 210mm;
     margin: 0 auto;
   }
+  
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+}
+
+.print-only {
+  display: none;
 }
 
 /* Dark Mode Overrides for Hardcoded Light Classes */
