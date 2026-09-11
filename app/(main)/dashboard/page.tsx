@@ -30,8 +30,34 @@ export default function DashboardPage() {
   };
 
   const currentMetrics = metrics["Today"];
-  
-  const formattedDate = new Date(selectedDate).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' });
+
+  // Date Range aur Single Date dono ko safely format karne ka function
+  const formatDateHelper = (dateStr: string) => {
+    if (!dateStr) return "SEP 11, 2026";
+
+    // Agar Date Range Pass hui ho (e.g. "2026-08-31 to 2026-09-11")
+    if (dateStr.includes(" to ") || dateStr.includes("➔")) {
+      const parts = dateStr.includes(" to ") ? dateStr.split(" to ") : dateStr.split("➔");
+      const d1 = new Date(parts[0].trim());
+      const d2 = new Date(parts[1].trim());
+
+      if (!isNaN(d1.getTime()) && !isNaN(d2.getTime())) {
+        const f1 = d1.toLocaleDateString("en-US", { month: 'short', day: 'numeric' });
+        const f2 = d2.toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' });
+        return `${f1} - ${f2}`;
+      }
+    }
+
+    // Agar Single Date Ho
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    return dateStr;
+  };
+
+  const formattedDate = formatDateHelper(selectedDate);
 
   return (
     <div className="space-y-6">
@@ -141,8 +167,6 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-
-      
       {/* Modals */}
       <Dialog open={salesModalOpen} onOpenChange={setSalesModalOpen}>
         <DialogContent className="max-w-md">

@@ -13,6 +13,13 @@ export default function SettingsPage() {
   const { t, customerBillFormat, setCustomerBillFormat, supplierBillFormat, setSupplierBillFormat, language, setLanguage: setGlobalLanguage, theme, setTheme } = useLanguage();
   const [activeTab, setActiveTab] = useState("General");
   
+  // Local state for language choice before saving
+  const [selectedLang, setSelectedLang] = useState(language);
+
+  useEffect(() => {
+    setSelectedLang(language);
+  }, [language]);
+
   // Security State
   const [passwordForm, setPasswordForm] = useState({ current: "", new: "", confirm: "" });
   
@@ -26,6 +33,10 @@ export default function SettingsPage() {
   
   // Appearance State
   const [activeColorTheme, setActiveColorTheme] = useState("aqua");
+
+  const handleGeneralSave = () => {
+    setGlobalLanguage(selectedLang as any);
+  };
 
   const handleUpdatePassword = () => {
     alert("Password successfully updated!");
@@ -102,8 +113,28 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Language</label>
                   <div className="flex gap-4">
-                    <button onClick={() => setGlobalLanguage('en')} className={`px-4 py-2 border rounded-lg ${language === 'en' ? 'border-[var(--color-aqua)] bg-[var(--color-aqua)]/10 text-[var(--color-ocean-blue)] font-bold' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>English</button>
-                    <button onClick={() => setGlobalLanguage('ur')} className={`px-4 py-2 border rounded-lg ${language === 'ur' ? 'border-[var(--color-aqua)] bg-[var(--color-aqua)]/10 text-[var(--color-ocean-blue)] font-bold' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>اردو (Urdu)</button>
+                    <button 
+                      type="button"
+                      onClick={() => setSelectedLang('en')} 
+                      className={`px-4 py-2 border rounded-lg transition-all ${
+                        selectedLang === 'en' 
+                          ? 'border-[var(--color-aqua)] bg-[var(--color-aqua)]/10 text-[var(--color-ocean-blue)] font-bold' 
+                          : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      English
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => setSelectedLang('ur')} 
+                      className={`px-4 py-2 border rounded-lg transition-all ${
+                        selectedLang === 'ur' 
+                          ? 'border-[var(--color-aqua)] bg-[var(--color-aqua)]/10 text-[var(--color-ocean-blue)] font-bold' 
+                          : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      اردو (Urdu)
+                    </button>
                   </div>
                 </div>
               </div>
@@ -179,7 +210,11 @@ export default function SettingsPage() {
               </div>
 
               <div className="pt-4">
-                <button className="bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                <button 
+                  type="button"
+                  onClick={handleGeneralSave} 
+                  className="bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                >
                   {t("save")}
                 </button>
               </div>
