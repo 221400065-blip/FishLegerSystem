@@ -44,6 +44,7 @@ export default function DashboardPage() {
       if (!isNaN(d1.getTime()) && !isNaN(d2.getTime())) {
         const diffTime = Math.abs(d2.getTime() - d1.getTime());
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays === 0) return "Today";
         if (diffDays <= 7) return "This Week";
         return "This Month";
       }
@@ -199,7 +200,7 @@ export default function DashboardPage() {
             <p className="text-sm text-slate-500">Revenue across all customers</p>
           </CardHeader>
           <CardContent>
-            <SalesTrendsChart timeFilter={timeKey} />
+            <SalesTrendsChart selectedDate={selectedDate} />
           </CardContent>
         </Card>
 
@@ -227,16 +228,12 @@ export default function DashboardPage() {
               <span className="font-bold text-slate-900">{currentMetrics.sales}</span>
             </div>
             <div className="flex justify-between py-2 border-b">
-              <span className="text-slate-600">Cash Payments</span>
-              <span className="font-semibold text-slate-900">45%</span>
-            </div>
-            <div className="flex justify-between py-2 border-b">
-              <span className="text-slate-600">Card Payments</span>
-              <span className="font-semibold text-slate-900">35%</span>
+              <span className="text-slate-600">Received Amount</span>
+              <span className="font-semibold text-green-600">RS {Number(currentMetrics.sales.replace(/[^0-9.-]+/g, '')) * 0.7}</span>
             </div>
             <div className="flex justify-between py-2">
-              <span className="text-slate-600">Bank Transfers</span>
-              <span className="font-semibold text-slate-900">20%</span>
+              <span className="text-slate-600">Remaining Amount</span>
+              <span className="font-semibold text-red-600">RS {Number(currentMetrics.sales.replace(/[^0-9.-]+/g, '')) * 0.3}</span>
             </div>
           </div>
         </DialogContent>
@@ -249,17 +246,9 @@ export default function DashboardPage() {
             <DialogDescription>Detailed view of your profit margins.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="flex justify-between py-2 border-b">
+            <div className="flex justify-between py-2">
               <span className="text-slate-600">Total Profit</span>
               <span className="font-bold text-green-600">{currentMetrics.profit}</span>
-            </div>
-            <div className="flex justify-between py-2 border-b">
-              <span className="text-slate-600">Gross Margin</span>
-              <span className="font-semibold text-slate-900">32%</span>
-            </div>
-            <div className="flex justify-between py-2">
-              <span className="text-slate-600">Net Margin</span>
-              <span className="font-semibold text-slate-900">24%</span>
             </div>
           </div>
         </DialogContent>

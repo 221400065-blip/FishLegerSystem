@@ -15,6 +15,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Pin
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/lib/LanguageContext";
@@ -22,9 +23,10 @@ import { useLanguage } from "@/lib/LanguageContext";
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { t, isSidebarOpen, setIsSidebarOpen } = useLanguage();
-
+  const { t, isSidebarOpen, setIsSidebarOpen, isSidebarHovered, setIsSidebarHovered } = useLanguage();
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+  
+  const expanded = isSidebarOpen || isSidebarHovered;
 
   useEffect(() => {
     setOpenMenus({
@@ -52,12 +54,13 @@ export function Sidebar() {
 
   return (
     <aside 
-      className={`fixed left-0 top-0 z-50 h-screen bg-[var(--color-ocean-blue)] transition-all duration-300 shadow-xl flex flex-col ${isSidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0 md:w-16'}`}
-      onMouseEnter={() => setIsSidebarOpen(true)}
-      onMouseLeave={() => setIsSidebarOpen(false)}
+      className={`fixed left-0 top-0 z-50 h-screen bg-[var(--color-ocean-blue)] transition-all duration-300 shadow-xl flex flex-col ${expanded ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0 md:w-16'}`}
+      onMouseEnter={() => setIsSidebarHovered(true)}
+      onMouseLeave={() => setIsSidebarHovered(false)}
     >
-      <div className={`h-20 flex items-center px-4 relative shrink-0 border-b border-white/10 ${isSidebarOpen ? 'justify-between' : 'justify-center'}`}>
-        <div className={`flex items-center gap-3 overflow-hidden whitespace-nowrap transition-all duration-300 ${!isSidebarOpen ? 'w-0 opacity-0 hidden md:block' : 'w-auto opacity-100'}`}>
+      <div className={`h-20 flex items-center px-4 relative shrink-0 border-b border-white/10 ${expanded ? 'justify-between' : 'justify-center'}`}>
+        {/* Expanded Logo & Brand Text */}
+        <div className={`flex items-center gap-3 overflow-hidden whitespace-nowrap transition-all duration-300 ${!expanded ? 'w-0 opacity-0 hidden' : 'w-auto opacity-100'}`}>
           <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center shrink-0">
              <MonitorSmartphone size={18} className="text-[var(--color-aqua)]" />
           </div>
@@ -65,13 +68,26 @@ export function Sidebar() {
             POS & Ledger System
           </span>
         </div>
+
+        {/* Collapsed Logo (Only shows when narrow) */}
+        {!expanded && (
+          <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center shrink-0 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+             <MonitorSmartphone size={18} className="text-[var(--color-aqua)]" />
+          </div>
+        )}
         
-        <button 
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className={`p-2 rounded-lg hover:bg-white/10 transition-all text-white hidden md:flex items-center justify-center shrink-0 ${!isSidebarOpen ? 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10' : ''}`}
-        >
-          {isSidebarOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
-        </button>
+        {/* Pin/Lock Button (Only visible when expanded on Desktop) */}
+        {expanded && (
+          <button 
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="p-2 rounded-lg hover:bg-white/10 transition-all text-[var(--color-aqua)] hidden md:flex items-center justify-center shrink-0"
+            title={isSidebarOpen ? "Unpin Sidebar" : "Pin Sidebar"}
+          >
+            {isSidebarOpen ? <Pin size={18} className="rotate-45" fill="currentColor" /> : <Pin size={18} />}
+          </button>
+        )}
+
+        {/* Mobile Close Button */}
         <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-2 text-white absolute right-4 top-1/2 -translate-y-1/2">
            <ChevronLeft size={20} />
         </button>
@@ -79,7 +95,7 @@ export function Sidebar() {
       
       <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar">
         <nav className="flex-1 px-3 space-y-1.5 mt-6">
-          <p className={`text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 px-2 transition-all duration-300 ${!isSidebarOpen ? 'opacity-0 h-0 overflow-hidden !mb-0' : 'opacity-100'}`}>
+          <p className={`text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 px-2 transition-all duration-300 ${!expanded ? 'opacity-0 h-0 overflow-hidden !mb-0' : 'opacity-100'}`}>
             Main Menu
           </p>
         {navItems.map((item) => {
@@ -98,10 +114,10 @@ export function Sidebar() {
                     ? "bg-white/10 text-white font-medium" 
                     : "text-slate-400 hover:bg-white/10 hover:text-white"
                 }`}
-                title={!isSidebarOpen ? t(item.id as any) : ""}
+                title={!expanded ? t(item.id as any) : ""}
                 onClick={() => {
                   if (hasChildren) {
-                    if (!isSidebarOpen) {
+                    if (!expanded) {
                       setIsSidebarOpen(true);
                       setOpenMenus(prev => ({ ...prev, [item.id]: true }));
                     } else {
@@ -111,12 +127,12 @@ export function Sidebar() {
                 }}
               >
                 <div className="flex items-center gap-3 relative">
-                  <div className={`flex items-center justify-center shrink-0 ${!isSidebarOpen ? 'mx-auto' : ''}`}>
+                  <div className={`flex items-center justify-center shrink-0 ${!expanded ? 'mx-auto' : ''}`}>
                     <item.icon size={18} />
                   </div>
-                  <span className={`whitespace-nowrap transition-all duration-300 ${!isSidebarOpen ? 'opacity-0 w-0 overflow-hidden absolute left-10' : 'opacity-100'}`}>{t(item.id as any)}</span>
+                  <span className={`whitespace-nowrap transition-all duration-300 ${!expanded ? 'opacity-0 w-0 overflow-hidden absolute left-10' : 'opacity-100'}`}>{t(item.id as any)}</span>
                 </div>
-                {hasChildren && isSidebarOpen && (
+                {hasChildren && expanded && (
                   <ChevronDown size={16} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                 )}
               </Link>
@@ -150,7 +166,7 @@ export function Sidebar() {
       </nav>
 
       <div className="p-3 mt-auto shrink-0">
-        <div className={`bg-white/5 border border-white/10 rounded-xl flex items-center ${isSidebarOpen ? 'justify-between p-3' : 'justify-center p-2'}`}>
+        <div className={`bg-white/5 border border-white/10 rounded-xl flex items-center ${expanded ? 'justify-between p-3' : 'justify-center p-2'}`}>
           <div className="flex items-center gap-3 overflow-hidden">
             <div className="relative shrink-0">
               <div className="w-9 h-9 rounded-full bg-[var(--color-aqua)] flex items-center justify-center font-bold text-sm text-[var(--color-ocean-blue)] shadow-inner">
@@ -159,7 +175,7 @@ export function Sidebar() {
               <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-[var(--color-ocean-blue)] rounded-full"></span>
             </div>
             
-            <div className={`whitespace-nowrap transition-all duration-300 ${!isSidebarOpen ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 w-auto'}`}>
+            <div className={`whitespace-nowrap transition-all duration-300 ${!expanded ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 w-auto'}`}>
               <p className="text-sm font-semibold text-white">Store Manager</p>
               <p className="text-xs text-slate-400">Admin</p>
             </div>
@@ -167,7 +183,7 @@ export function Sidebar() {
           
           <button 
             onClick={() => router.push('/login')}
-            className={`p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-white/5 transition-colors shrink-0 ${!isSidebarOpen && 'hidden md:hidden'}`}
+            className={`p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-white/5 transition-colors shrink-0 ${!expanded && 'hidden md:hidden'}`}
             title="Sign Out"
           >
             <LogOut size={18} className="rotate-180" />

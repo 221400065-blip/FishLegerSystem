@@ -19,23 +19,41 @@ export function Navbar() {
   const router = useRouter();
   const { 
     t, 
+    selectedDate,
     setSelectedDate, 
     setIsSidebarOpen, 
     notifications, 
     markNotificationAsRead 
   } = useLanguage();
 
-  // Initial Range state
-  const [startDate, setStartDate] = useState("2026-08-31");
-  const [endDate, setEndDate] = useState("2026-09-11");
+  // Initialize Range state from context
+  const [startDate, setStartDate] = useState(() => {
+    if (selectedDate?.includes(" to ")) return selectedDate.split(" to ")[0].trim();
+    if (selectedDate?.includes("➔")) return selectedDate.split("➔")[0].trim();
+    return selectedDate || new Date().toISOString().split('T')[0];
+  });
+  const [endDate, setEndDate] = useState(() => {
+    if (selectedDate?.includes(" to ")) return selectedDate.split(" to ")[1].trim();
+    if (selectedDate?.includes("➔")) return selectedDate.split("➔")[1].trim();
+    return selectedDate || new Date().toISOString().split('T')[0];
+  });
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-
-  // Page load hotey hi context mein poori range pass kar do
+  
+  // Sync internal state if external selectedDate changes
   useEffect(() => {
-    if (setSelectedDate) {
-      setSelectedDate(`${startDate} to ${endDate}`);
+    if (selectedDate) {
+      if (selectedDate.includes(" to ")) {
+        setStartDate(selectedDate.split(" to ")[0].trim());
+        setEndDate(selectedDate.split(" to ")[1].trim());
+      } else if (selectedDate.includes("➔")) {
+        setStartDate(selectedDate.split("➔")[0].trim());
+        setEndDate(selectedDate.split("➔")[1].trim());
+      } else {
+        setStartDate(selectedDate);
+        setEndDate(selectedDate);
+      }
     }
-  }, []);
+  }, [selectedDate]);
 
   const handleNotificationClick = (id: string, type: string) => {
     markNotificationAsRead(id);
@@ -59,25 +77,36 @@ export function Navbar() {
     setIsDatePickerOpen(false);
   };
 
+  const getLocalISODate = (date: Date) => {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
   const handleSetToday = () => {
-    const today = new Date().toISOString().split('T')[0];
-    setStartDate(today);
-    setEndDate(today);
-    if (setSelectedDate) setSelectedDate(today);
+    const todayStr = getLocalISODate(new Date());
+    setStartDate(todayStr);
+    setEndDate(todayStr);
+    if (setSelectedDate) setSelectedDate(todayStr);
     setIsDatePickerOpen(false);
   };
 
   const handleSetThisMonth = () => {
     const today = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
-    const currentDay = today.toISOString().split('T')[0];
-    setStartDate(firstDay);
-    setEndDate(currentDay);
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    
+    const firstDayStr = getLocalISODate(firstDay);
+    const currentDayStr = getLocalISODate(today);
+    
+    setStartDate(firstDayStr);
+    setEndDate(currentDayStr);
+    
     if (setSelectedDate) {
-      if (firstDay === currentDay) {
-        setSelectedDate(firstDay);
+      if (firstDayStr === currentDayStr) {
+        setSelectedDate(firstDayStr);
       } else {
-        setSelectedDate(`${firstDay} to ${currentDay}`);
+        setSelectedDate(`${firstDayStr} to ${currentDayStr}`);
       }
     }
     setIsDatePickerOpen(false);
@@ -133,51 +162,51 @@ export function Navbar() {
 
           {/* Date Picker Dropdown */}
           {isDatePickerOpen && (
-            <div className="absolute right-0 md:right-auto mt-2 p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-2xl z-50 w-[260px] md:w-72 space-y-4">
-              <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-2">
-                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Date Range Filter</span>
-                <span className="text-[10px] font-semibold text-cyan-500">Select Range</span>
+            <div className="absolute right-0 md:right-auto mt-2 p-5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-xl rounded-2xl z-50 w-[280px] md:w-[320px] space-y-5 animate-in fade-in zoom-in duration-200">
+              <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+                <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Select Date Range</span>
+                <span className="bg-cyan-50 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase">Filter</span>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div>
-                  <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">
-                    From Date
+                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 block mb-1.5">
+                    From
                   </label>
                   <input
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all shadow-inner"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">
-                    To Date
+                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 block mb-1.5">
+                    To
                   </label>
                   <input
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all shadow-inner"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
-                <div className="flex gap-1 md:gap-2">
+              <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={handleSetToday}
-                    className="text-[10px] md:text-[11px] bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 px-2 py-1 rounded-md transition-colors font-medium"
+                    className="text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-lg transition-colors font-semibold"
                   >
                     Today
                   </button>
                   <button
                     type="button"
                     onClick={handleSetThisMonth}
-                    className="text-[10px] md:text-[11px] bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 px-2 py-1 rounded-md transition-colors font-medium"
+                    className="text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-lg transition-colors font-semibold"
                   >
                     This Month
                   </button>
@@ -186,7 +215,7 @@ export function Navbar() {
                 <button
                   type="button"
                   onClick={handleApplyFilter}
-                  className="bg-cyan-500 hover:bg-cyan-600 text-white text-xs font-semibold px-2 md:px-3 py-1.5 rounded-lg transition-colors shadow-sm"
+                  className="bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors shadow-sm"
                 >
                   Apply
                 </button>

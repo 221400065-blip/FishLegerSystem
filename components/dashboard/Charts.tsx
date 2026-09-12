@@ -12,6 +12,7 @@ import {
   Cell,
   Legend,
 } from "recharts";
+import { useMemo } from "react";
 
 const datasets = {
   "Today": [
@@ -46,8 +47,63 @@ const categoryData = [
 
 const COLORS = ["#06B6D4", "#0B2545", "#f97316", "#cbd5e1"];
 
-export function SalesTrendsChart({ timeFilter = "Today" }: { timeFilter?: string }) {
-  const chartData = datasets[timeFilter as keyof typeof datasets] || datasets["Today"];
+export function SalesTrendsChart({ selectedDate = "" }: { selectedDate?: string }) {
+  const chartData = useMemo(() => {
+    if (!selectedDate) return datasets["Today"];
+    
+    const isRange = selectedDate.includes(" to ") || selectedDate.includes("➔");
+    if (!isRange) return datasets["Today"];
+    
+    const parts = selectedDate.includes(" to ") ? selectedDate.split(" to ") : selectedDate.split("➔");
+    const d1 = new Date(parts[0].trim());
+    const d2 = new Date(parts[1].trim());
+    
+    if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return datasets["Today"];
+    
+    const diffTime = Math.abs(d2.getTime() - d1.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return datasets["Today"];
+    
+    // For small ranges (<= 14 days), show daily data
+    if (diffDays <= 14) {
+      const data = [];
+      for (let i = 0; i <= diffDays; i++) {
+        const current = new Date(d1);
+        current.setDate(current.getDate() + i);
+        const name = current.toLocaleDateString("en-US", { month: 'short', day: 'numeric' });
+        // Pseudo-random based on date so it doesn't flicker
+        const seed = current.getDate() + current.getMonth(); 
+        data.push({
+          name,
+          sales: 8000 + (seed * 800) + ((i % 3) * 1500),
+          profit: 2000 + (seed * 200) + ((i % 2) * 400)
+        });
+      }
+      return data;
+    }
+    
+    // For larger ranges (> 14 days), show 4-6 evenly spaced data points
+    const data = [];
+    const points = Math.min(diffDays + 1, 6);
+    const step = Math.max(1, Math.floor(diffDays / (points - 1)));
+    
+    for (let i = 0; i < points; i++) {
+      const current = new Date(d1);
+      current.setDate(current.getDate() + (i * step));
+      if (current > d2) current.setTime(d2.getTime());
+      
+      const name = current.toLocaleDateString("en-US", { month: 'short', day: 'numeric' });
+      const seed = current.getDate();
+      data.push({
+          name,
+          sales: 40000 + (seed * 2000) + ((i % 3) * 5000),
+          profit: 10000 + (seed * 400) + ((i % 2) * 1500)
+      });
+      if (current.getTime() === d2.getTime()) break;
+    }
+    return data;
+  }, [selectedDate]);
 
   return (
     <div className="h-[300px] w-full mt-4">
@@ -67,6 +123,7 @@ export function SalesTrendsChart({ timeFilter = "Today" }: { timeFilter?: string
           <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(value) => `RS ${value/1000}k`} />
           <Tooltip 
              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+             itemSorter={(item) => item.dataKey === 'sales' ? -1 : 1}
              formatter={(value: any, name: any) => {
                if (name === "sales") return [`RS ${Number(value).toLocaleString()}`, 'Sales'];
                if (name === "profit") return [`RS ${Number(value).toLocaleString()}`, 'Profit'];

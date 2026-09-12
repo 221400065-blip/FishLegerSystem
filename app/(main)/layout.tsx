@@ -9,12 +9,13 @@ export default function MainLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isSidebarOpen, setIsSidebarOpen } = useLanguage();
+  const { isSidebarOpen, isSidebarHovered, setIsSidebarOpen } = useLanguage();
+  const expanded = isSidebarOpen || isSidebarHovered;
 
   return (
-    <div className="min-h-screen bg-[var(--color-canvas)]">
+    <div className="min-h-screen bg-[var(--color-canvas)] overflow-x-hidden">
       <Sidebar />
-      <div className={`${isSidebarOpen ? 'md:pl-64 pl-0' : 'md:pl-16 pl-0'} transition-all duration-300 flex flex-col min-h-screen w-full`}>
+      <div className={`${expanded ? 'md:pl-64 pl-0' : 'md:pl-16 pl-0'} transition-all duration-300 flex flex-col min-h-screen w-full`}>
         <Navbar />
         <main className="px-4 md:px-6 lg:px-8 py-6 flex-1 w-full overflow-hidden">
           {children}

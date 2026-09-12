@@ -196,6 +196,8 @@ interface LanguageContextType {
   setSupplierBillFormat: (format: "thermal" | "simple") => void;
   isSidebarOpen: boolean;
   setIsSidebarOpen: (isOpen: boolean) => void;
+  isSidebarHovered: boolean;
+  setIsSidebarHovered: (isHovered: boolean) => void;
   theme: "light" | "dark";
   setTheme: (theme: "light" | "dark") => void;
   notifications: Notification[];
@@ -216,6 +218,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [customerBillFormat, setCustomerBillFormat] = useState<"thermal" | "simple">("thermal");
   const [supplierBillFormat, setSupplierBillFormat] = useState<"thermal" | "simple">("simple");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [theme, setThemeState] = useState<"light" | "dark">("light");
 
   const [notifications, setNotifications] = useState<Notification[]>([
@@ -243,6 +246,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       if (stored) {
         setCustomers(JSON.parse(stored));
       }
+      const storedDate = localStorage.getItem("selectedDate");
+      if (storedDate) {
+        setSelectedDate(storedDate);
+      }
     } catch (e) {
       console.error("Failed to load customers from local storage", e);
     }
@@ -251,8 +258,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isClient) {
       localStorage.setItem("customersData", JSON.stringify(customers));
+      localStorage.setItem("selectedDate", selectedDate);
     }
-  }, [customers, isClient]);
+  }, [customers, selectedDate, isClient]);
 
   const addCustomer = (customer: Customer) => {
     setCustomers(prev => [...prev, customer]);
@@ -309,6 +317,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       customerBillFormat, setCustomerBillFormat, 
       supplierBillFormat, setSupplierBillFormat, 
       isSidebarOpen, setIsSidebarOpen, 
+      isSidebarHovered, setIsSidebarHovered,
       theme, setTheme,
       notifications, markNotificationAsRead, deleteNotification, clearAllNotifications,
       customers, addCustomer, updateCustomer, deleteCustomer
