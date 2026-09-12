@@ -29,7 +29,33 @@ export default function DashboardPage() {
     "This Month": { sales: "$320,500", suppliers: 15, profit: "$74,000", salesChange: "+22% from last month", suppliersChange: "+4 active", profitChange: "+8% margin" }
   };
 
-  const currentMetrics = metrics["Today"];
+  // Helper to determine the "time range key" for metrics & charts based on the selected date
+  const getTimeFilterKey = (dateStr: string) => {
+    if (!dateStr || dateStr.toLowerCase() === "today") return "Today";
+    if (dateStr.toLowerCase() === "this week") return "This Week";
+    if (dateStr.toLowerCase() === "this month") return "This Month";
+    
+    // If it's a date range
+    if (dateStr.includes(" to ") || dateStr.includes("➔")) {
+      const parts = dateStr.includes(" to ") ? dateStr.split(" to ") : dateStr.split("➔");
+      const d1 = new Date(parts[0].trim());
+      const d2 = new Date(parts[1].trim());
+      
+      if (!isNaN(d1.getTime()) && !isNaN(d2.getTime())) {
+        const diffTime = Math.abs(d2.getTime() - d1.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays <= 7) return "This Week";
+        return "This Month";
+      }
+      return "This Week";
+    }
+    
+    // Single date
+    return "Today";
+  };
+
+  const timeKey = getTimeFilterKey(selectedDate);
+  const currentMetrics = metrics[timeKey as keyof typeof metrics] || metrics["Today"];
 
   // Date Range aur Single Date dono ko safely format karne ka function
   const formatDateHelper = (dateStr: string) => {
@@ -173,7 +199,7 @@ export default function DashboardPage() {
             <p className="text-sm text-slate-500">Revenue across all customers</p>
           </CardHeader>
           <CardContent>
-            <SalesTrendsChart timeFilter={selectedDate} />
+            <SalesTrendsChart timeFilter={timeKey} />
           </CardContent>
         </Card>
 

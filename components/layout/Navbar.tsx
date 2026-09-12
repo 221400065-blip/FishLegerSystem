@@ -93,8 +93,8 @@ export function Navbar() {
   };
 
   return (
-    <header className="h-auto min-h-[5rem] py-4 md:py-0 md:h-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 w-full sticky top-0 z-40 gap-4 transition-colors">
-      <div className="flex items-center gap-4 w-full md:w-1/4 justify-between md:justify-start">
+    <header className="h-auto min-h-[4rem] py-3 md:py-0 md:h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex flex-wrap md:flex-nowrap items-center justify-between px-4 md:px-8 w-full sticky top-0 z-40 gap-4 md:gap-6 transition-colors">
+      <div className="flex items-center gap-4 w-auto shrink-0 justify-start order-1">
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setIsSidebarOpen(true)}
@@ -107,18 +107,18 @@ export function Navbar() {
       </div>
 
       {/* Centered Search Bar */}
-      <div className="relative w-full md:w-1/2 max-w-xl flex justify-center">
+      <div className="relative w-full order-3 md:order-2 md:flex-1 max-w-2xl mx-auto flex justify-center mt-2 md:mt-0">
          <div className="relative w-full">
-           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
            <input 
              type="text" 
              placeholder="Search invoices, customers, ledger records..."
-             className="pl-10 pr-4 py-2 w-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-aqua)] transition-all"
+             className="pl-10 pr-4 py-2 w-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-full text-sm border border-transparent focus:bg-white focus:border-[var(--color-aqua)] focus:outline-none transition-all shadow-sm"
            />
          </div>
       </div>
 
-      <div className="flex flex-wrap md:flex-nowrap items-center gap-3 md:gap-6 w-full md:w-1/4 justify-between md:justify-end">
+      <div className="flex items-center gap-3 md:gap-4 shrink-0 order-2 md:order-3">
         {/* FROM - TO Date Range Picker Button */}
         <div className="relative flex-1 md:flex-none flex justify-end">
           <button

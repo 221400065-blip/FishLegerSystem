@@ -33,6 +33,10 @@ export default function CustomersPage() {
     return matchesTab && matchesSearch;
   });
 
+  const itemsPerPage = 8;
+  const totalPages = Math.max(1, Math.ceil(filteredCustomers.length / itemsPerPage));
+  const paginatedCustomers = filteredCustomers.slice((activePage - 1) * itemsPerPage, activePage * itemsPerPage);
+
   const totalRevenue = filteredCustomers.reduce((sum, c) => sum + (c.billed || 0), 0);
   const totalActive = filteredCustomers.filter(c => c.status === "Active").length;
   const totalOutstanding = filteredCustomers.reduce((sum, c) => sum + ((c.billed || 0) - (c.paid || 0)), 0); 
@@ -196,8 +200,8 @@ export default function CustomersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredCustomers.length > 0 ? (
-                filteredCustomers.map((customer) => {
+              {paginatedCustomers.length > 0 ? (
+                paginatedCustomers.map((customer) => {
                   const initials = customer.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
                   return (
                     <TableRow key={customer.id} className="hover:bg-slate-50/50 transition-colors">
@@ -265,7 +269,7 @@ export default function CustomersPage() {
         {/* Pagination */}
         <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-between bg-slate-50/50">
           <p className="text-sm text-slate-500 font-medium">
-            Showing <strong className="text-slate-900">{filteredCustomers.length}</strong> of <strong className="text-slate-900">{customers.length}</strong> customers
+            Showing <strong className="text-slate-900">{(activePage - 1) * itemsPerPage + 1}-{Math.min(activePage * itemsPerPage, filteredCustomers.length)}</strong> of <strong className="text-slate-900">{filteredCustomers.length}</strong> customers
           </p>
           <div className="flex items-center gap-1">
             <Button 
@@ -276,7 +280,7 @@ export default function CustomersPage() {
             >
               <ChevronLeft size={16} />
             </Button>
-            {[1, 2, 3].map(page => (
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
               <Button 
                 key={page}
                 variant="outline" 
@@ -293,8 +297,8 @@ export default function CustomersPage() {
             <Button 
               variant="outline" size="icon" 
               className="h-8 w-8 bg-white border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-              disabled={activePage === 3}
-              onClick={() => setActivePage(p => Math.min(3, p + 1))}
+              disabled={activePage === totalPages}
+              onClick={() => setActivePage(p => Math.min(totalPages, p + 1))}
             >
               <ChevronRight size={16} />
             </Button>

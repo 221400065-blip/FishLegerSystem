@@ -234,6 +234,26 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     { id: "C-006", name: "Nadia Shah", phone: "+92 311 9988776", billed: 620.00, paid: 500.00, status: "Inactive" },
   ]);
 
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    try {
+      const stored = localStorage.getItem("customersData");
+      if (stored) {
+        setCustomers(JSON.parse(stored));
+      }
+    } catch (e) {
+      console.error("Failed to load customers from local storage", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isClient) {
+      localStorage.setItem("customersData", JSON.stringify(customers));
+    }
+  }, [customers, isClient]);
+
   const addCustomer = (customer: Customer) => {
     setCustomers(prev => [...prev, customer]);
   };

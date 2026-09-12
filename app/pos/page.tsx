@@ -33,7 +33,6 @@ export default function POSPage() {
   const [payAllModal, setPayAllModal] = useState(false);
   const [addCustomerModal, setAddCustomerModal] = useState(false);
   const [activeTab, setActiveTab] = useState("All");
-  const [mobileTab, setMobileTab] = useState<"products" | "cart" | "summary">("products");
   const commissionRate = 8; // Fixed strictly at 8%
 
   const [activeCustomerId, setActiveCustomerId] = useState("C-001");
@@ -134,22 +133,22 @@ export default function POSPage() {
 
   return (
     <>
-    <div className="min-h-[100dvh] bg-[var(--color-canvas)] flex flex-col h-[100dvh] overflow-hidden no-print">
+    <div className="min-h-[100dvh] bg-[var(--color-canvas)] flex flex-col h-[100dvh] overflow-x-hidden no-print w-full max-w-full px-3 md:px-6 py-2 md:py-4">
       {/* Top Header */}
-      <header className="h-16 bg-[var(--color-ocean-blue)] text-white flex items-center justify-between px-6 shrink-0">
-        <div className="flex items-center gap-4">
-          <button onClick={() => router.back()} className="text-slate-300 hover:text-white transition-colors p-1" title="Go Back">
+      <header className="min-h-[4rem] h-auto py-2 bg-[var(--color-ocean-blue)] text-white flex flex-wrap items-center justify-between px-4 md:px-6 shrink-0 gap-3 rounded-xl mb-4">
+        <div className="flex items-center gap-2 md:gap-4 w-full md:w-auto">
+          <button onClick={() => router.back()} className="text-slate-300 hover:text-white transition-colors p-1 shrink-0" title="Go Back">
             <ArrowLeft size={20} />
           </button>
-          <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-              <MonitorSmartphone className="text-[var(--color-aqua)]" size={18} />
+          <Link href="/dashboard" className="flex items-center gap-2 md:gap-3 hover:opacity-80 transition-opacity min-w-0">
+            <div className="w-7 h-7 md:w-8 md:h-8 bg-white/10 rounded-lg flex items-center justify-center shrink-0">
+              <MonitorSmartphone className="text-[var(--color-aqua)]" size={16} />
             </div>
-            <h1 className="font-bold text-lg tracking-wide">Ledger System / Multi-Customer Sales</h1>
+            <h1 className="font-bold text-sm md:text-lg tracking-wide truncate">Ledger System / Sales</h1>
           </Link>
         </div>
         
-        <div className="flex-1 max-w-md mx-8 relative">
+        <div className="flex-1 w-full md:w-auto md:max-w-md mx-0 md:mx-8 relative hidden md:block">
            {/* Search removed based on feedback */}
         </div>
 
@@ -185,33 +184,11 @@ export default function POSPage() {
         </div>
       </header>
 
-      {/* Mobile Tab Navigation (Visible only on small screens) */}
-      <div className="flex lg:hidden bg-white border-b border-slate-200 shrink-0 shadow-sm z-10">
-        <button 
-          onClick={() => setMobileTab("products")} 
-          className={`flex-1 py-3 text-sm font-semibold transition-colors ${mobileTab === 'products' ? 'text-[var(--color-aqua)] border-b-2 border-[var(--color-aqua)] bg-[var(--color-aqua)]/5' : 'text-slate-500 hover:text-slate-700'}`}
-        >
-          Products
-        </button>
-        <button 
-          onClick={() => setMobileTab("cart")} 
-          className={`flex-1 py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${mobileTab === 'cart' ? 'text-[var(--color-aqua)] border-b-2 border-[var(--color-aqua)] bg-[var(--color-aqua)]/5' : 'text-slate-500 hover:text-slate-700'}`}
-        >
-          Cart <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full text-[10px] leading-none">{activeCart.reduce((s, i) => s + i.qty, 0)}</span>
-        </button>
-        <button 
-          onClick={() => setMobileTab("summary")} 
-          className={`flex-1 py-3 text-sm font-semibold transition-colors ${mobileTab === 'summary' ? 'text-[var(--color-aqua)] border-b-2 border-[var(--color-aqua)] bg-[var(--color-aqua)]/5' : 'text-slate-500 hover:text-slate-700'}`}
-        >
-          Summary
-        </button>
-      </div>
-
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden p-4 gap-4">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden gap-4 pb-10 lg:pb-0 w-full max-w-full overflow-x-hidden">
         
         {/* Column 1: Customer & Product Catalog */}
-        <div className={`w-full lg:w-1/3 flex-col gap-4 shrink-0 ${mobileTab === 'products' ? 'flex' : 'hidden lg:flex'}`}>
+        <div className="w-full lg:w-1/3 flex-col gap-4 flex shrink-0 lg:shrink max-w-full overflow-x-hidden">
           
           {/* Customer Selection */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col shrink-0">
@@ -221,11 +198,11 @@ export default function POSPage() {
                 <Plus size={14} className="mr-1" /> {t("add")} Customer
               </Button>
             </div>
-            <div className="relative mb-3">
+            <div className="relative mb-3 w-full">
                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-               <Input placeholder="Search customer..." className="h-8 pl-8 text-xs bg-slate-50" />
+               <Input placeholder="Search customer..." className="w-full h-8 pl-8 text-xs bg-slate-50" />
             </div>
-            <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+            <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar w-full">
               {customers.map((c, i) => (
                 <div 
                   key={c.id} 
@@ -241,13 +218,13 @@ export default function POSPage() {
           </div>
 
           {/* Product Catalog */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex-1 flex flex-col min-h-0">
-            <div className="relative mb-3 shrink-0">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 min-h-[500px] lg:min-h-0 lg:flex-1 flex flex-col w-full max-w-full overflow-x-hidden">
+            <div className="relative mb-3 shrink-0 w-full">
                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-               <Input placeholder={t("searchProduct")} className="h-9 pl-8 text-sm bg-slate-50" />
+               <Input placeholder={t("searchProduct")} className="w-full h-9 pl-8 text-sm bg-slate-50" />
             </div>
             
-            <div className="flex gap-1 mb-4 overflow-x-auto hide-scrollbar shrink-0 border-b border-slate-100 pb-2">
+            <div className="flex gap-2 mb-4 overflow-x-auto hide-scrollbar shrink-0 border-b border-slate-100 pb-2 w-full">
               {["All", "Chargers", "Accessories", "Cables"].map(tab => (
                 <button 
                   key={tab}
@@ -281,7 +258,7 @@ export default function POSPage() {
         </div>
 
         {/* Column 2: Active Billing Cart */}
-        <div className={`w-full lg:w-[38%] min-h-[400px] lg:min-h-0 bg-white rounded-xl shadow-sm border border-slate-200 flex-col shrink-0 p-4 md:p-6 ${mobileTab === 'cart' ? 'flex' : 'hidden lg:flex'}`}>
+        <div className="w-full lg:w-[38%] min-h-[400px] lg:min-h-0 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col shrink-0 lg:shrink p-4 md:p-6 mt-4 lg:mt-0 max-w-full overflow-x-hidden">
           <div className="pb-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-slate-50/50 rounded-t-xl -mx-4 md:-mx-6 -mt-4 md:-mt-6 px-4 md:px-6 pt-4 md:pt-6">
             <div>
               <p className="text-xs text-slate-500 font-medium">{t("billingTo")}</p>
@@ -292,90 +269,145 @@ export default function POSPage() {
             {/* Action buttons removed as requested */}
           </div>
 
-          <div className="flex-1 overflow-y-auto py-4 custom-scrollbar">
-            <div className="overflow-x-auto w-full">
-              <table className="w-full text-sm min-w-[300px]">
-                <thead className="text-xs text-slate-500 border-b border-slate-100">
-                <tr>
-                  <th className="font-medium text-left pb-2 w-2/5">PRODUCT</th>
-                  <th className="font-medium text-center pb-2 w-20">QTY</th>
-                  <th className="font-medium text-right pb-2 w-24">PRICE</th>
-                  <th className="font-medium text-right pb-2">COMM (8%)</th>
-                  <th className="font-medium text-right pb-2">TOTAL</th>
-                  <th className="font-medium text-right pb-2 w-8"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
+          <div className="flex-1 overflow-y-auto py-4 custom-scrollbar w-full">
+            <div className="w-full max-w-full pb-2">
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto w-full">
+                <table className="w-full text-sm min-w-[450px]">
+                  <thead className="text-xs text-slate-500 border-b border-slate-100">
+                    <tr>
+                      <th className="font-medium text-left pb-2 w-[35%]">PRODUCT</th>
+                      <th className="font-medium text-center pb-2 w-[15%]">QTY</th>
+                      <th className="font-medium text-right pb-2 w-[20%]">PRICE</th>
+                      <th className="font-medium text-right pb-2 px-2 w-[15%]">
+                        COMMISSION ($)<br/>
+                        <span className="text-[10px] text-slate-400 font-normal">(8% Rate)</span>
+                      </th>
+                      <th className="font-medium text-right pb-2 w-[15%]">TOTAL</th>
+                      <th className="font-medium text-right pb-2 w-8"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {activeCart.map(item => {
+                      const lineComm = item.total * 0.08;
+                      const grandPrice = item.total + lineComm;
+                      return (
+                      <tr key={item.id} className="group">
+                        <td className="py-3">
+                          <p className="font-medium text-slate-900 truncate pr-2" title={item.name}>{item.name}</p>
+                        </td>
+                        <td className="py-3">
+                          <input 
+                            type="number" 
+                            min="1" 
+                            value={item.qty || ''} 
+                            onChange={(e) => handleQtyChange(item.id, Number(e.target.value))}
+                            className="w-16 h-8 border border-slate-200 rounded-md text-center text-xs focus:outline-none focus:border-[var(--color-aqua)] mx-auto block"
+                          />
+                        </td>
+                        <td className="py-3">
+                          <div className="flex items-center justify-end">
+                            <span className="text-slate-500 text-xs mr-1">$</span>
+                            <input 
+                              type="number" 
+                              min="0"
+                              step="0.01" 
+                              value={item.price || ''} 
+                              onChange={(e) => handlePriceChange(item.id, Number(e.target.value))}
+                              className="w-16 h-8 border border-slate-200 rounded-md text-right text-xs px-1 focus:outline-none focus:border-[var(--color-aqua)]"
+                            />
+                          </div>
+                        </td>
+                        <td className="py-3 text-right text-slate-500 text-xs">${lineComm.toFixed(2)}</td>
+                        <td className="py-3 text-right font-bold text-[var(--color-ocean-blue)]">${grandPrice.toFixed(2)}</td>
+                        <td className="py-3 text-right">
+                           <button onClick={() => handleRemoveItem(item.id)} className="text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                        </td>
+                      </tr>
+                    )})}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card Layout */}
+              <div className="md:hidden space-y-3">
                 {activeCart.map(item => {
                   const lineComm = item.total * 0.08;
                   const grandPrice = item.total + lineComm;
                   return (
-                  <tr key={item.id} className="group">
-                    <td className="py-3">
-                      <p className="font-medium text-slate-900 truncate pr-2" title={item.name}>{item.name}</p>
-                    </td>
-                    <td className="py-3">
-                      <input 
-                        type="number" 
-                        min="1" 
-                        value={item.qty || ''} 
-                        onChange={(e) => handleQtyChange(item.id, Number(e.target.value))}
-                        className="w-16 h-8 border border-slate-200 rounded-md text-center text-xs focus:outline-none focus:border-[var(--color-aqua)] mx-auto block"
-                      />
-                    </td>
-                    <td className="py-3">
-                      <div className="flex items-center justify-end">
-                        <span className="text-slate-500 text-xs mr-1">$</span>
-                        <input 
-                          type="number" 
-                          min="0"
-                          step="0.01" 
-                          value={item.price || ''} 
-                          onChange={(e) => handlePriceChange(item.id, Number(e.target.value))}
-                          className="w-16 h-8 border border-slate-200 rounded-md text-right text-xs px-1 focus:outline-none focus:border-[var(--color-aqua)]"
-                        />
+                    <div key={item.id} className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm flex flex-col gap-3 relative">
+                      <div className="flex justify-between items-start gap-2 pr-6">
+                        <p className="font-bold text-slate-900 text-sm leading-tight">{item.name}</p>
+                        <button onClick={() => handleRemoveItem(item.id)} className="absolute top-3 right-3 text-slate-400 hover:text-red-500 transition-colors">
+                          <Trash2 size={16} />
+                        </button>
                       </div>
-                    </td>
-                    <td className="py-3 text-right text-slate-500 text-xs">${lineComm.toFixed(2)}</td>
-                    <td className="py-3 text-right font-bold text-[var(--color-ocean-blue)]">${grandPrice.toFixed(2)}</td>
-                    <td className="py-3 text-right">
-                       <button onClick={() => handleRemoveItem(item.id)} className="text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
-                    </td>
-                  </tr>
-                )})}
-              </tbody>
-              </table>
+                      
+                      <div className="grid grid-cols-4 gap-2 items-end">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] text-slate-500 font-medium">QTY</span>
+                          <input 
+                            type="number" 
+                            min="1" 
+                            value={item.qty || ''} 
+                            onChange={(e) => handleQtyChange(item.id, Number(e.target.value))}
+                            className="w-full h-8 border border-slate-200 rounded-md text-center text-xs focus:outline-none focus:border-[var(--color-aqua)] bg-slate-50"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] text-slate-500 font-medium">PRICE</span>
+                          <div className="flex items-center relative">
+                            <span className="absolute left-2 text-slate-400 text-xs">$</span>
+                            <input 
+                              type="number" 
+                              min="0"
+                              step="0.01" 
+                              value={item.price || ''} 
+                              onChange={(e) => handlePriceChange(item.id, Number(e.target.value))}
+                              className="w-full h-8 pl-5 pr-1 border border-slate-200 rounded-md text-right text-xs focus:outline-none focus:border-[var(--color-aqua)] bg-slate-50"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-1 text-right">
+                          <span className="text-[10px] text-slate-500 font-medium">COMM(8%)</span>
+                          <span className="text-xs font-semibold text-slate-600 h-8 flex items-center justify-end">${lineComm.toFixed(2)}</span>
+                        </div>
+                        <div className="flex flex-col gap-1 text-right">
+                          <span className="text-[10px] text-slate-500 font-medium">TOTAL</span>
+                          <span className="text-sm font-bold text-[var(--color-ocean-blue)] h-8 flex items-center justify-end">${grandPrice.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
           <div className="border-t border-slate-100 shrink-0 pt-4 bg-slate-50/80 -mx-4 md:-mx-6 -mb-4 md:-mb-6 px-4 md:px-6 pb-4 md:pb-6 rounded-b-xl">
             <div className="space-y-1 pb-3">
               <div className="flex justify-between text-sm items-center py-1">
-                <span className="text-slate-500">Subtotal (Without Commission)</span>
+                <span className="text-slate-500">Subtotal</span>
                 <span className="font-medium text-slate-900">${subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-sm items-center py-1">
-                <span className="text-slate-500">Commission (8%)</span>
-                <span className="font-medium text-slate-900">${commission.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-lg font-bold pt-2 border-t border-slate-200 mt-2">
                 <span className="text-slate-900">Grand Total</span>
                 <span className="text-[var(--color-aqua)]">${customerTotal.toFixed(2)}</span>
               </div>
             </div>
-            <div className="flex gap-2 mt-4">
-              <Button onClick={handlePrint} variant="outline" className="flex-1 h-12 text-[var(--color-aqua)] border-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/10 hover:text-[var(--color-aqua)] font-bold text-base shadow-sm">
+            <div className="flex justify-between gap-3 mt-4 w-full px-1">
+              <Button onClick={handlePrint} variant="outline" className="flex-1 h-12 text-[var(--color-aqua)] border-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/10 hover:text-[var(--color-aqua)] font-bold text-sm md:text-base shadow-sm min-w-0">
                 Print Bill
               </Button>
-              <Button onClick={() => setCompleteSaleModal(true)} className="flex-1 h-12 bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90 text-white font-bold text-base shadow-sm">
+              <Button onClick={() => setCompleteSaleModal(true)} className="flex-1 h-12 bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90 text-white font-bold text-sm md:text-base shadow-sm min-w-0">
                 {t("completeSale")}
               </Button>
             </div>
           </div>
         </div>
 
-        {/* Column 3: Multi-Customer Order Summary & Grand Total */}
-        <div className={`w-full lg:w-[28%] flex-col gap-4 shrink-0 ${mobileTab === 'summary' ? 'flex' : 'hidden lg:flex'}`}>
+        {/* Column 3: Active Sessions & Summary */}
+        <div className="w-full lg:w-[28%] flex flex-col gap-4 shrink-0 lg:shrink mt-4 lg:mt-0 max-w-full overflow-x-hidden">
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 flex flex-col">
              <div className="p-4 border-b border-slate-100">
                <h2 className="font-bold text-slate-900">{t("activeSessions")}</h2>
@@ -391,15 +423,15 @@ export default function POSPage() {
                     <div 
                       key={c.id} 
                       onClick={() => setActiveCustomerId(c.id)}
-                      className={`p-3 rounded-lg flex justify-between items-center cursor-pointer transition-colors border
+                      className={`px-4 py-3 md:px-5 rounded-lg flex justify-between items-center w-full gap-4 cursor-pointer transition-colors border
                         ${isActive ? 'border-[var(--color-aqua)]/50 bg-[var(--color-aqua)]/5' : 'border-slate-100 hover:border-slate-200'}
                       `}
                     >
-                      <div>
-                        <p className={`text-sm font-bold ${isActive ? 'text-[var(--color-ocean-blue)]' : 'text-slate-700'}`}>{c.name}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className={`text-sm font-bold truncate ${isActive ? 'text-[var(--color-ocean-blue)]' : 'text-slate-700'}`}>{c.name}</p>
                         <p className="text-xs text-slate-500">{cart.length} items</p>
                       </div>
-                      <div className="flex flex-col items-end text-xs">
+                      <div className="flex flex-col items-end text-xs shrink-0 pr-2">
                         <span className="text-slate-500">Subtotal: ${cSub.toFixed(2)}</span>
                         <span className="text-slate-500">Comm (8%): ${(cSub * 0.08).toFixed(2)}</span>
                         <span className={`font-bold text-sm mt-1 ${isActive ? 'text-[var(--color-aqua)]' : 'text-slate-900'}`}>Total: ${cTotal.toFixed(2)}</span>
@@ -410,35 +442,37 @@ export default function POSPage() {
              </div>
           </div>
 
-          <div className="bg-[var(--color-ocean-blue)] rounded-xl shadow-md p-6 text-white shrink-0 relative overflow-hidden">
+          <div className="bg-[var(--color-ocean-blue)] rounded-xl shadow-md p-5 md:p-6 text-white shrink-0 relative overflow-hidden w-full max-w-full">
             <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/5 rounded-full blur-2xl"></div>
             <div className="absolute -left-6 -bottom-6 w-32 h-32 bg-[var(--color-aqua)]/10 rounded-full blur-2xl"></div>
             
-            <h3 className="text-slate-300 text-sm font-medium mb-4 uppercase tracking-wider relative z-10">{t("grandSummary")}</h3>
+            <h3 className="text-slate-300 text-sm font-medium mb-4 uppercase tracking-wider relative z-10 px-1">{t("grandSummary")}</h3>
             
-            <div className="space-y-2 text-sm relative z-10">
-              <div className="flex justify-between">
-                <span className="text-slate-300">{t("totalItems")}</span>
-                <span className="font-semibold">{totalItems}</span>
+            <div className="space-y-3 text-sm relative z-10 px-1 pr-4">
+              <div className="flex justify-between items-center w-full gap-4">
+                <span className="text-slate-300 truncate">Total Items</span>
+                <span className="font-semibold shrink-0">{totalItems}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-300">{t("combinedSubtotal")}</span>
-                <span className="font-semibold">${combinedSubtotal.toFixed(2)}</span>
+              <div className="flex justify-between items-center w-full gap-4">
+                <span className="text-slate-300 truncate">Combined Subtotal</span>
+                <span className="font-semibold shrink-0">${combinedSubtotal.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-300">Commission ({commissionRate}%)</span>
-                <span className="font-semibold">${totalCommission.toFixed(2)}</span>
+              <div className="flex justify-between items-center w-full gap-4">
+                <span className="text-slate-300 truncate">Commission ({commissionRate}%)</span>
+                <span className="font-semibold shrink-0">${totalCommission.toFixed(2)}</span>
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-white/20 relative z-10">
+            <div className="mt-6 pt-4 border-t border-white/20 relative z-10 px-1">
               <p className="text-slate-300 text-xs mb-1">{t("grandTotal")}</p>
-              <h2 className="text-4xl font-bold text-[var(--color-aqua)] tracking-tight">${grandTotal.toFixed(2)}</h2>
+              <h2 className="text-3xl md:text-4xl font-bold text-[var(--color-aqua)] tracking-tight truncate">${grandTotal.toFixed(2)}</h2>
             </div>
 
-            <Button onClick={() => setPayAllModal(true)} className="w-full mt-6 h-12 bg-orange-600 hover:bg-orange-700 text-white font-bold text-base shadow-sm relative z-10">
-              Save Invoice
-            </Button>
+            <div className="w-full px-1 mt-6">
+              <Button onClick={() => setPayAllModal(true)} className="w-full mx-auto h-12 bg-orange-600 hover:bg-orange-700 text-white font-bold text-base shadow-sm relative z-10 block">
+                Save Invoice
+              </Button>
+            </div>
           </div>
         </div>
       </div>
