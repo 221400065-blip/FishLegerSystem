@@ -33,6 +33,8 @@ export default function POSPage() {
   const [payAllModal, setPayAllModal] = useState(false);
   const [addCustomerModal, setAddCustomerModal] = useState(false);
   const [activeTab, setActiveTab] = useState("All");
+  const [customerSearchTerm, setCustomerSearchTerm] = useState("");
+  const [productSearchTerm, setProductSearchTerm] = useState("");
   const commissionRate = 8; // Fixed strictly at 8%
 
   const [activeCustomerId, setActiveCustomerId] = useState("C-001");
@@ -200,10 +202,15 @@ export default function POSPage() {
             </div>
             <div className="relative mb-3 w-full">
                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-               <Input placeholder="Search customer..." className="w-full h-8 pl-8 text-xs bg-slate-50" />
+               <Input 
+                 placeholder="Search customer..." 
+                 className="w-full h-8 pl-8 text-xs bg-slate-50" 
+                 value={customerSearchTerm}
+                 onChange={(e) => setCustomerSearchTerm(e.target.value)}
+               />
             </div>
             <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar w-full">
-              {customers.map((c, i) => (
+              {customers.filter(c => c.name.toLowerCase().includes(customerSearchTerm.toLowerCase()) || c.id.toLowerCase().includes(customerSearchTerm.toLowerCase())).map((c, i) => (
                 <div 
                   key={c.id} 
                   onClick={() => setActiveCustomerId(c.id)}
@@ -221,7 +228,12 @@ export default function POSPage() {
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 min-h-[500px] lg:min-h-0 lg:flex-1 flex flex-col w-full max-w-full overflow-x-hidden">
             <div className="relative mb-3 shrink-0 w-full">
                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-               <Input placeholder={t("searchProduct")} className="w-full h-9 pl-8 text-sm bg-slate-50" />
+               <Input 
+                 placeholder={t("searchProduct")} 
+                 className="w-full h-9 pl-8 text-sm bg-slate-50" 
+                 value={productSearchTerm}
+                 onChange={(e) => setProductSearchTerm(e.target.value)}
+               />
             </div>
             
             <div className="flex gap-2 mb-4 overflow-x-auto hide-scrollbar shrink-0 border-b border-slate-100 pb-2 w-full">
@@ -238,7 +250,7 @@ export default function POSPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-              {products.filter(p => activeTab === "All" || p.category === activeTab).map(p => (
+              {products.filter(p => (activeTab === "All" || p.category === activeTab) && (p.name.toLowerCase().includes(productSearchTerm.toLowerCase()) || p.id.toLowerCase().includes(productSearchTerm.toLowerCase()))).map(p => (
                 <div key={p.id} className="flex items-center gap-3 p-2 border border-slate-100 rounded-lg hover:border-[var(--color-aqua)]/50 transition-colors group">
                   <img src={p.image} alt={p.name} className="w-12 h-12 rounded-md object-cover bg-slate-100" />
                   <div className="flex-1 min-w-0">
