@@ -203,7 +203,7 @@ export function Navbar() {
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
             )}
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-72">
+          <DropdownMenuContent align="end" className="w-[calc(100vw-2rem)] sm:w-72 max-w-md mx-4 sm:mx-0">
             <DropdownMenuGroup>
               <div className="flex items-center justify-between px-2 py-1.5">
                 <span className="font-semibold text-sm">{t("notifications")}</span>

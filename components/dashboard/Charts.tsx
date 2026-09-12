@@ -64,12 +64,12 @@ export function SalesTrendsChart({ timeFilter = "Today" }: { timeFilter?: string
             </linearGradient>
           </defs>
           <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
-          <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(value) => `$${value/1000}k`} />
+          <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(value) => `RS ${value/1000}k`} />
           <Tooltip 
              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
              formatter={(value: any, name: any) => {
-               if (name === "sales") return [`$${Number(value).toLocaleString()}`, 'Sales'];
-               if (name === "profit") return [`$${Number(value).toLocaleString()}`, 'Profit'];
+               if (name === "sales") return [`RS ${Number(value).toLocaleString()}`, 'Sales'];
+               if (name === "profit") return [`RS ${Number(value).toLocaleString()}`, 'Profit'];
                return [value, name];
              }}
           />

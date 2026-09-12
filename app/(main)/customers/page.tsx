@@ -116,7 +116,7 @@ export default function CustomersPage() {
             <div className="flex justify-between items-start">
               <div className="space-y-2">
                 <p className="text-sm font-medium text-slate-500">Total Customer Revenue</p>
-                <h2 className="text-3xl font-bold text-slate-900">${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+                <h2 className="text-3xl font-bold text-slate-900">RS {totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
               </div>
               <div className="w-10 h-10 bg-[var(--color-aqua)]/10 text-[var(--color-aqua)] rounded-full flex items-center justify-center">
                 <DollarSign size={20} />
@@ -130,7 +130,7 @@ export default function CustomersPage() {
             <div className="flex justify-between items-start">
               <div className="space-y-2">
                 <p className="text-sm font-medium text-slate-500">Total Outstanding Receivables</p>
-                <h2 className="text-3xl font-bold text-slate-900">${totalOutstanding.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+                <h2 className="text-3xl font-bold text-slate-900">RS {totalOutstanding.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
               </div>
               <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center">
                 <CreditCard size={20} />
@@ -393,15 +393,15 @@ export default function CustomersPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-slate-50 p-3 rounded-lg">
                   <p className="text-xs text-slate-500 mb-1">Total Billed</p>
-                  <p className="font-bold text-slate-900">${(selectedCustomer.billed || 0).toLocaleString()}</p>
+                  <p className="font-bold text-slate-900">RS {(selectedCustomer.billed || 0).toLocaleString()}</p>
                 </div>
                 <div className="bg-slate-50 p-3 rounded-lg">
                   <p className="text-xs text-slate-500 mb-1">Amount Paid</p>
-                  <p className="font-bold text-green-600">${(selectedCustomer.paid || 0).toLocaleString()}</p>
+                  <p className="font-bold text-green-600">RS {(selectedCustomer.paid || 0).toLocaleString()}</p>
                 </div>
                 <div className="bg-slate-50 p-3 rounded-lg col-span-2">
                   <p className="text-xs text-slate-500 mb-1">Outstanding Balance</p>
-                  <p className="font-bold text-orange-600 text-lg">${((selectedCustomer.billed || 0) - (selectedCustomer.paid || 0)).toLocaleString()}</p>
+                  <p className="font-bold text-orange-600 text-lg">RS {((selectedCustomer.billed || 0) - (selectedCustomer.paid || 0)).toLocaleString()}</p>
                 </div>
               </div>
             </div>

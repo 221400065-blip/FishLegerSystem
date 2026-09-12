@@ -244,7 +244,7 @@ export default function POSPage() {
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-semibold text-slate-900 truncate">{p.name}</h3>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-xs font-bold text-[var(--color-ocean-blue)]">${p.price.toFixed(2)}</span>
+                      <span className="text-xs font-bold text-[var(--color-ocean-blue)]">RS {p.price.toFixed(2)}</span>
                       {p.discount && <Badge variant="secondary" className="bg-orange-100 text-orange-700 text-[9px] px-1 py-0 h-4">{p.discount}</Badge>}
                     </div>
                   </div>
@@ -280,7 +280,7 @@ export default function POSPage() {
                       <th className="font-medium text-center pb-2 w-[15%]">QTY</th>
                       <th className="font-medium text-right pb-2 w-[20%]">PRICE</th>
                       <th className="font-medium text-right pb-2 px-2 w-[15%]">
-                        COMMISSION ($)<br/>
+                        COMMISSION (RS)<br/>
                         <span className="text-[10px] text-slate-400 font-normal">(8% Rate)</span>
                       </th>
                       <th className="font-medium text-right pb-2 w-[15%]">TOTAL</th>
@@ -307,7 +307,7 @@ export default function POSPage() {
                         </td>
                         <td className="py-3">
                           <div className="flex items-center justify-end">
-                            <span className="text-slate-500 text-xs mr-1">$</span>
+                            <span className="text-slate-500 text-xs mr-1">RS </span>
                             <input 
                               type="number" 
                               min="0"
@@ -318,8 +318,8 @@ export default function POSPage() {
                             />
                           </div>
                         </td>
-                        <td className="py-3 text-right text-slate-500 text-xs">${lineComm.toFixed(2)}</td>
-                        <td className="py-3 text-right font-bold text-[var(--color-ocean-blue)]">${grandPrice.toFixed(2)}</td>
+                        <td className="py-3 text-right text-slate-500 text-xs">RS {lineComm.toFixed(2)}</td>
+                        <td className="py-3 text-right font-bold text-[var(--color-ocean-blue)]">RS {grandPrice.toFixed(2)}</td>
                         <td className="py-3 text-right">
                            <button onClick={() => handleRemoveItem(item.id)} className="text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
                         </td>
@@ -357,7 +357,7 @@ export default function POSPage() {
                         <div className="flex flex-col gap-1">
                           <span className="text-[10px] text-slate-500 font-medium">PRICE</span>
                           <div className="flex items-center relative">
-                            <span className="absolute left-2 text-slate-400 text-xs">$</span>
+                            <span className="absolute left-2 text-slate-400 text-xs">RS </span>
                             <input 
                               type="number" 
                               min="0"
@@ -370,11 +370,11 @@ export default function POSPage() {
                         </div>
                         <div className="flex flex-col gap-1 text-right">
                           <span className="text-[10px] text-slate-500 font-medium">COMM(8%)</span>
-                          <span className="text-xs font-semibold text-slate-600 h-8 flex items-center justify-end">${lineComm.toFixed(2)}</span>
+                          <span className="text-xs font-semibold text-slate-600 h-8 flex items-center justify-end">RS {lineComm.toFixed(2)}</span>
                         </div>
                         <div className="flex flex-col gap-1 text-right">
                           <span className="text-[10px] text-slate-500 font-medium">TOTAL</span>
-                          <span className="text-sm font-bold text-[var(--color-ocean-blue)] h-8 flex items-center justify-end">${grandPrice.toFixed(2)}</span>
+                          <span className="text-sm font-bold text-[var(--color-ocean-blue)] h-8 flex items-center justify-end">RS {grandPrice.toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
@@ -388,11 +388,11 @@ export default function POSPage() {
             <div className="space-y-1 pb-3">
               <div className="flex justify-between text-sm items-center py-1">
                 <span className="text-slate-500">Subtotal</span>
-                <span className="font-medium text-slate-900">${subtotal.toFixed(2)}</span>
+                <span className="font-medium text-slate-900">RS {subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-lg font-bold pt-2 border-t border-slate-200 mt-2">
                 <span className="text-slate-900">Grand Total</span>
-                <span className="text-[var(--color-aqua)]">${customerTotal.toFixed(2)}</span>
+                <span className="text-[var(--color-aqua)]">RS {customerTotal.toFixed(2)}</span>
               </div>
             </div>
             <div className="flex justify-between gap-3 mt-4 w-full px-1">
@@ -432,9 +432,9 @@ export default function POSPage() {
                         <p className="text-xs text-slate-500">{cart.length} items</p>
                       </div>
                       <div className="flex flex-col items-end text-xs shrink-0 pr-2">
-                        <span className="text-slate-500">Subtotal: ${cSub.toFixed(2)}</span>
-                        <span className="text-slate-500">Comm (8%): ${(cSub * 0.08).toFixed(2)}</span>
-                        <span className={`font-bold text-sm mt-1 ${isActive ? 'text-[var(--color-aqua)]' : 'text-slate-900'}`}>Total: ${cTotal.toFixed(2)}</span>
+                        <span className="text-slate-500">Subtotal: RS {cSub.toFixed(2)}</span>
+                        <span className="text-slate-500">Comm (8%): RS {(cSub * 0.08).toFixed(2)}</span>
+                        <span className={`font-bold text-sm mt-1 ${isActive ? 'text-[var(--color-aqua)]' : 'text-slate-900'}`}>Total: RS {cTotal.toFixed(2)}</span>
                       </div>
                     </div>
                   );
@@ -455,17 +455,17 @@ export default function POSPage() {
               </div>
               <div className="flex justify-between items-center w-full gap-4">
                 <span className="text-slate-300 truncate">Combined Subtotal</span>
-                <span className="font-semibold shrink-0">${combinedSubtotal.toFixed(2)}</span>
+                <span className="font-semibold shrink-0">RS {combinedSubtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center w-full gap-4">
                 <span className="text-slate-300 truncate">Commission ({commissionRate}%)</span>
-                <span className="font-semibold shrink-0">${totalCommission.toFixed(2)}</span>
+                <span className="font-semibold shrink-0">RS {totalCommission.toFixed(2)}</span>
               </div>
             </div>
 
             <div className="mt-6 pt-4 border-t border-white/20 relative z-10 px-1">
               <p className="text-slate-300 text-xs mb-1">{t("grandTotal")}</p>
-              <h2 className="text-3xl md:text-4xl font-bold text-[var(--color-aqua)] tracking-tight truncate">${grandTotal.toFixed(2)}</h2>
+              <h2 className="text-3xl md:text-4xl font-bold text-[var(--color-aqua)] tracking-tight truncate">RS {grandTotal.toFixed(2)}</h2>
             </div>
 
             <div className="w-full px-1 mt-6">
@@ -508,7 +508,7 @@ export default function POSPage() {
           <DialogHeader>
             <DialogTitle className="text-xl">Complete Sale?</DialogTitle>
             <DialogDescription>
-              Completing sale for <strong className="text-slate-900">Ahmed Traders</strong> for <strong className="text-[var(--color-aqua)]">$163.08</strong>.
+              Completing sale for <strong className="text-slate-900">Ahmed Traders</strong> for <strong className="text-[var(--color-aqua)]">RS 163.08</strong>.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -526,7 +526,7 @@ export default function POSPage() {
           <DialogHeader>
             <DialogTitle className="text-xl">Pay All Invoices?</DialogTitle>
             <DialogDescription>
-              You are about to settle <strong className="text-slate-900">2 customer orders</strong> for a Grand Total of <strong className="text-orange-600">$266.76</strong>.
+              You are about to settle <strong className="text-slate-900">2 customer orders</strong> for a Grand Total of <strong className="text-orange-600">RS 266.76</strong>.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -566,8 +566,8 @@ export default function POSPage() {
               <tr key={i} className="border-b border-gray-100 last:border-0">
                 <td className="py-2">{item.name}</td>
                 <td className="py-2 text-center">{item.qty}</td>
-                <td className="py-2 text-right">${item.price.toFixed(2)}</td>
-                <td className="py-2 text-right">${item.total.toFixed(2)}</td>
+                <td className="py-2 text-right">RS {item.price.toFixed(2)}</td>
+                <td className="py-2 text-right">RS {item.total.toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
@@ -576,15 +576,15 @@ export default function POSPage() {
         <div className="space-y-2 text-right text-sm">
           <div className="flex justify-between">
             <span>Subtotal:</span>
-            <span>${subtotal.toFixed(2)}</span>
+            <span>RS {subtotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
             <span>Commission (8%):</span>
-            <span>${commission.toFixed(2)}</span>
+            <span>RS {commission.toFixed(2)}</span>
           </div>
           <div className="flex justify-between font-bold text-lg pt-2 border-t-2 border-black mt-2">
             <span>Grand Total:</span>
-            <span>${customerTotal.toFixed(2)}</span>
+            <span>RS {customerTotal.toFixed(2)}</span>
           </div>
         </div>
         

@@ -220,8 +220,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const [notifications, setNotifications] = useState<Notification[]>([
     { id: "1", title: "Low Stock Alert", description: "5 products are running low on stock.", type: "inventory", isRead: false, date: "10 mins ago" },
-    { id: "2", title: "New Order", description: "Ahmed Traders placed an order for $1,250.", type: "order", isRead: false, date: "1 hour ago" },
-    { id: "3", title: "Payment Received", description: "Payment of $500 received from Zara Malik.", type: "customer", isRead: false, date: "3 hours ago" },
+    { id: "2", title: "New Order", description: "Ahmed Traders placed an order for RS 1,250.", type: "order", isRead: false, date: "1 hour ago" },
+    { id: "3", title: "Payment Received", description: "Payment of RS 500 received from Zara Malik.", type: "customer", isRead: false, date: "3 hours ago" },
     { id: "4", title: "System Update", description: "Ledger System v2.1 has been installed successfully.", type: "system", isRead: true, date: "1 day ago" }
   ]);
 

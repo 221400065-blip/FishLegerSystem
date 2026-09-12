@@ -72,7 +72,7 @@ export default function PurchaseBillsPage() {
                   <TableCell className="text-slate-600">{bill.date}</TableCell>
                   <TableCell className="font-medium text-[var(--color-aqua)]">{bill.id}</TableCell>
                   <TableCell className="font-medium text-slate-900">{bill.supplier}</TableCell>
-                  <TableCell className="text-right font-semibold text-slate-900 pr-8">${bill.amount.toFixed(2)}</TableCell>
+                  <TableCell className="text-right font-semibold text-slate-900 pr-8">RS {bill.amount.toFixed(2)}</TableCell>
                   <TableCell>
                     <Badge variant="secondary" className={bill.status === 'Paid' ? 'bg-green-100 text-green-700 font-semibold' : 'bg-orange-100 text-orange-700 font-semibold'}>
                       {bill.status}
@@ -115,7 +115,7 @@ export default function PurchaseBillsPage() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Amount ($)</label>
+              <label className="text-sm font-medium">Amount (RS)</label>
               <Input 
                 type="number"
                 value={newBill.amount}
@@ -176,14 +176,14 @@ export default function PurchaseBillsPage() {
                     <TableRow>
                       <TableCell className="font-medium">Product A</TableCell>
                       <TableCell>10</TableCell>
-                      <TableCell className="text-right">$25.00</TableCell>
-                      <TableCell className="text-right font-medium">$250.00</TableCell>
+                      <TableCell className="text-right">RS 25.00</TableCell>
+                      <TableCell className="text-right font-medium">RS 250.00</TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell className="font-medium">Product B</TableCell>
                       <TableCell>5</TableCell>
-                      <TableCell className="text-right">$45.00</TableCell>
-                      <TableCell className="text-right font-medium">$225.00</TableCell>
+                      <TableCell className="text-right">RS 45.00</TableCell>
+                      <TableCell className="text-right font-medium">RS 225.00</TableCell>
                     </TableRow>
                   </TableBody>
                 </Table>
@@ -191,7 +191,7 @@ export default function PurchaseBillsPage() {
               
               <div className="flex justify-between items-center py-4 border-t border-slate-200">
                 <span className="text-slate-600 font-medium">Grand Total</span>
-                <span className="text-2xl font-bold text-slate-900">${selectedBill.amount.toFixed(2)}</span>
+                <span className="text-2xl font-bold text-slate-900">RS {selectedBill.amount.toFixed(2)}</span>
               </div>
             </div>
           )}

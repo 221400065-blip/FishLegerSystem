@@ -238,8 +238,8 @@ export default function InventoryPage() {
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell className="text-right font-medium text-slate-500">${product.unitPrice.toFixed(2)}</TableCell>
-                    <TableCell className="text-right font-bold text-[var(--color-ocean-blue)]">${product.sellingPrice.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-medium text-slate-500">RS {product.unitPrice.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-bold text-[var(--color-ocean-blue)]">RS {product.sellingPrice.toFixed(2)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Button onClick={() => openView(product)} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-[var(--color-ocean-blue)]">
@@ -384,11 +384,11 @@ export default function InventoryPage() {
                 </div>
                 <div className="bg-slate-50 p-3 rounded-lg">
                   <p className="text-xs text-slate-500 mb-1">Unit Price</p>
-                  <p className="font-bold text-slate-900">${selectedProduct.unitPrice.toFixed(2)}</p>
+                  <p className="font-bold text-slate-900">RS {selectedProduct.unitPrice.toFixed(2)}</p>
                 </div>
                 <div className="bg-slate-50 p-3 rounded-lg">
                   <p className="text-xs text-slate-500 mb-1">Selling Price</p>
-                  <p className="font-bold text-[var(--color-ocean-blue)] text-lg">${selectedProduct.sellingPrice.toFixed(2)}</p>
+                  <p className="font-bold text-[var(--color-ocean-blue)] text-lg">RS {selectedProduct.sellingPrice.toFixed(2)}</p>
                 </div>
               </div>
             </div>

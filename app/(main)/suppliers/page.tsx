@@ -125,7 +125,7 @@ export default function SuppliersPage() {
             <div className="flex justify-between items-start">
               <div className="space-y-2">
                 <p className="text-sm font-medium text-slate-500">Total Outstanding Dues</p>
-                <h2 className="text-3xl font-bold text-slate-900">${totalOutstanding.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+                <h2 className="text-3xl font-bold text-slate-900">RS {totalOutstanding.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
               </div>
               <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center">
                 <Clock size={20} />
@@ -142,7 +142,7 @@ export default function SuppliersPage() {
             <div className="flex justify-between items-start">
               <div className="space-y-2">
                 <p className="text-sm font-medium text-slate-500">Total Pending Invoices</p>
-                <h2 className="text-3xl font-bold text-slate-900">${totalPending.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+                <h2 className="text-3xl font-bold text-slate-900">RS {totalPending.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
               </div>
               <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
                 <FileText size={20} />
@@ -159,7 +159,7 @@ export default function SuppliersPage() {
             <div className="flex justify-between items-start">
               <div className="space-y-2">
                 <p className="text-sm font-medium text-slate-500">Paid this month</p>
-                <h2 className="text-3xl font-bold text-slate-900">${totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+                <h2 className="text-3xl font-bold text-slate-900">RS {totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
               </div>
               <div className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
                 <CheckCircle2 size={20} />
@@ -374,15 +374,15 @@ export default function SuppliersPage() {
                 </div>
                 <div className="bg-slate-50 p-3 rounded-lg">
                   <p className="text-xs text-slate-500 mb-1">Total Amount</p>
-                  <p className="font-bold text-slate-900">${selectedPO.amount.toLocaleString()}</p>
+                  <p className="font-bold text-slate-900">RS {selectedPO.amount.toLocaleString()}</p>
                 </div>
                 <div className="bg-slate-50 p-3 rounded-lg">
                   <p className="text-xs text-slate-500 mb-1">Amount Paid</p>
-                  <p className="font-bold text-green-600">${selectedPO.paid.toLocaleString()}</p>
+                  <p className="font-bold text-green-600">RS {selectedPO.paid.toLocaleString()}</p>
                 </div>
                 <div className="bg-slate-50 p-3 rounded-lg">
                   <p className="text-xs text-slate-500 mb-1">Balance Payable</p>
-                  <p className="font-bold text-red-600">${(selectedPO.amount - selectedPO.paid).toLocaleString()}</p>
+                  <p className="font-bold text-red-600">RS {(selectedPO.amount - selectedPO.paid).toLocaleString()}</p>
                 </div>
               </div>
             </div>

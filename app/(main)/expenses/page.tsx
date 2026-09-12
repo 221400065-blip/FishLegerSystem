@@ -74,7 +74,7 @@ export default function ExpensesPage() {
                     <TableCell className="text-slate-600">{expense.date}</TableCell>
                     <TableCell className="font-medium text-slate-900">{expense.description}</TableCell>
                     <TableCell>{expense.category}</TableCell>
-                    <TableCell className="text-right font-semibold text-slate-900 pr-12">${expense.amount.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-semibold text-slate-900 pr-12">RS {expense.amount.toFixed(2)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-[var(--color-ocean-blue)]" onClick={(e) => { e.stopPropagation(); setSelectedExpense(expense); setIsDetailModalOpen(true); }}>
@@ -162,7 +162,7 @@ export default function ExpensesPage() {
               </div>
               <div className="flex justify-between py-2 border-b">
                 <span className="text-slate-600">Amount</span>
-                <span className="font-bold text-[var(--color-aqua)]">${selectedExpense.amount.toFixed(2)}</span>
+                <span className="font-bold text-[var(--color-aqua)]">RS {selectedExpense.amount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between py-2 border-b">
                 <span className="text-slate-600">Payment Method</span>

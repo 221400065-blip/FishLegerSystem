@@ -11,11 +11,11 @@ import { SalesTrendsChart, TopCategoriesChart } from "@/components/dashboard/Cha
 import Link from "next/link";
 
 const recentOrders = [
-  { id: "ORD-738", customer: "Ahmed Traders", items: 4, payment: "Credit Card", total: "$245.00", status: "Completed" },
-  { id: "ORD-739", customer: "Zara Imports", items: 12, payment: "Bank Transfer", total: "$380.00", status: "Pending" },
-  { id: "ORD-740", customer: "Ali Electronics", items: 2, payment: "Cash", total: "$56.00", status: "Completed" },
-  { id: "ORD-741", customer: "Sana Store", items: 8, payment: "Credit Card", total: "$190.50", status: "Processing" },
-  { id: "ORD-742", customer: "Bilal Wholesale", items: 24, payment: "Wallet", total: "$1,240.00", status: "Pending" },
+  { id: "ORD-738", customer: "Ahmed Traders", items: 4, payment: "Credit Card", total: "RS 245.00", status: "Completed" },
+  { id: "ORD-739", customer: "Zara Imports", items: 12, payment: "Bank Transfer", total: "RS 380.00", status: "Pending" },
+  { id: "ORD-740", customer: "Ali Electronics", items: 2, payment: "Cash", total: "RS 56.00", status: "Completed" },
+  { id: "ORD-741", customer: "Sana Store", items: 8, payment: "Credit Card", total: "RS 190.50", status: "Processing" },
+  { id: "ORD-742", customer: "Bilal Wholesale", items: 24, payment: "Wallet", total: "RS 1,240.00", status: "Pending" },
 ];
 
 export default function DashboardPage() {
@@ -24,9 +24,9 @@ export default function DashboardPage() {
   const [profitModalOpen, setProfitModalOpen] = useState(false);
 
   const metrics = {
-    "Today": { sales: "$12,450", suppliers: 8, profit: "$3,240", salesChange: "+15% from yesterday", suppliersChange: "+2 active", profitChange: "+12% margin" },
-    "This Week": { sales: "$84,300", suppliers: 12, profit: "$18,500", salesChange: "+8% from last week", suppliersChange: "Stable", profitChange: "+4% margin" },
-    "This Month": { sales: "$320,500", suppliers: 15, profit: "$74,000", salesChange: "+22% from last month", suppliersChange: "+4 active", profitChange: "+8% margin" }
+    "Today": { sales: "RS 12,450", suppliers: 8, profit: "RS 3,240", salesChange: "+15% from yesterday", suppliersChange: "+2 active", profitChange: "+12% margin" },
+    "This Week": { sales: "RS 84,300", suppliers: 12, profit: "RS 18,500", salesChange: "+8% from last week", suppliersChange: "Stable", profitChange: "+4% margin" },
+    "This Month": { sales: "RS 320,500", suppliers: 15, profit: "RS 74,000", salesChange: "+22% from last month", suppliersChange: "+4 active", profitChange: "+8% margin" }
   };
 
   // Helper to determine the "time range key" for metrics & charts based on the selected date
