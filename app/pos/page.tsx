@@ -35,6 +35,8 @@ export default function POSPage() {
   const [activeTab, setActiveTab] = useState("All");
   const [mobileTab, setMobileTab] = useState("products");
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
+  const [activeSessionSearchTerm, setActiveSessionSearchTerm] = useState("");
+  const [deleteSessionId, setDeleteSessionId] = useState<string | null>(null);
   const [productSearchTerm, setProductSearchTerm] = useState("");
   const [customerDropdownOpen, setCustomerDropdownOpen] = useState(false);
   const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>(["C-001"]);
@@ -133,12 +135,26 @@ export default function POSPage() {
     setNewCustomerData({ name: "", phone: "" });
   };
 
+  const confirmDeleteSession = () => {
+    if (!deleteSessionId) return;
+    setCarts(prev => {
+      const newCarts = { ...prev };
+      delete newCarts[deleteSessionId];
+      return newCarts;
+    });
+    setSelectedCustomerIds(prev => prev.filter(id => id !== deleteSessionId));
+    if (activeCustomerId === deleteSessionId) {
+      setActiveCustomerId(customers[0]?.id || "");
+    }
+    setDeleteSessionId(null);
+  };
+
   return (
     <>
     <div className="min-h-[100dvh] bg-[var(--color-canvas)] flex flex-col h-[100dvh] overflow-x-hidden no-print w-full max-w-full px-3 md:px-6 py-2 md:py-4">
       {/* Top Header */}
-      <header className="min-h-[4rem] h-auto py-2 bg-[var(--color-ocean-blue)] text-white flex flex-wrap items-center justify-between px-4 md:px-6 shrink-0 gap-3 rounded-xl mb-4">
-        <div className="flex items-center gap-2 md:gap-4 w-full md:w-auto">
+      <header className="min-h-[4rem] h-auto py-2 bg-[var(--color-ocean-blue)] text-white flex items-center justify-between px-3 md:px-6 shrink-0 gap-2 md:gap-3 rounded-xl mb-4">
+        <div className="flex items-center gap-2 md:gap-4">
           <button onClick={() => router.back()} className="text-slate-300 hover:text-white transition-colors p-1 shrink-0" title="Go Back">
             <ArrowLeft size={20} />
           </button>
@@ -146,18 +162,18 @@ export default function POSPage() {
             <div className="w-7 h-7 md:w-8 md:h-8 bg-white/10 rounded-lg flex items-center justify-center shrink-0">
               <MonitorSmartphone className="text-[var(--color-aqua)]" size={16} />
             </div>
-            <h1 className="font-bold text-sm md:text-lg tracking-wide truncate">Ledger System / Sales</h1>
+            <h1 className="font-bold text-sm md:text-lg tracking-wide truncate">Sales</h1>
           </Link>
         </div>
         
-        <div className="flex-1 w-full md:w-auto md:max-w-md mx-0 md:mx-8 relative hidden md:block">
+        <div className="flex-1 max-w-md mx-8 relative hidden md:block">
            {/* Search removed based on feedback */}
         </div>
 
-        <div className="flex items-center gap-6">
-          <p className="text-sm text-slate-300">09 Sep 2026</p>
+        <div className="flex items-center gap-3 md:gap-6 ml-auto">
+          <p suppressHydrationWarning className="text-xs md:text-sm text-slate-300 hidden md:block">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-2 border-l border-white/20 pl-6 cursor-pointer focus:outline-none">
+            <DropdownMenuTrigger className="flex items-center gap-2 md:border-l md:border-white/20 md:pl-6 cursor-pointer focus:outline-none">
               <div className="w-8 h-8 rounded-full bg-[var(--color-aqua)] flex items-center justify-center text-white shadow-sm">
                 <User size={16} />
               </div>
@@ -189,7 +205,7 @@ export default function POSPage() {
       {/* Mobile Tab Switchers */}
       <div className="md:hidden flex border-b border-slate-200 bg-white mb-4 rounded-xl shrink-0 overflow-hidden shadow-sm">
         <button onClick={() => setMobileTab("products")} className={`flex-1 py-3 text-sm font-medium transition-colors ${mobileTab === 'products' ? 'bg-[var(--color-aqua)]/10 text-[var(--color-aqua)] border-b-2 border-[var(--color-aqua)]' : 'text-slate-500 bg-white'}`}>Products</button>
-        <button onClick={() => setMobileTab("cart")} className={`flex-1 py-3 text-sm font-medium transition-colors ${mobileTab === 'cart' ? 'bg-[var(--color-aqua)]/10 text-[var(--color-aqua)] border-b-2 border-[var(--color-aqua)]' : 'text-slate-500 bg-white'}`}>Cart / Billing</button>
+        <button onClick={() => setMobileTab("cart")} className={`flex-1 py-3 text-sm font-medium transition-colors ${mobileTab === 'cart' ? 'bg-[var(--color-aqua)]/10 text-[var(--color-aqua)] border-b-2 border-[var(--color-aqua)]' : 'text-slate-500 bg-white'}`}>Cart ({activeCart.length})</button>
         <button onClick={() => setMobileTab("summary")} className={`flex-1 py-3 text-sm font-medium transition-colors ${mobileTab === 'summary' ? 'bg-[var(--color-aqua)]/10 text-[var(--color-aqua)] border-b-2 border-[var(--color-aqua)]' : 'text-slate-500 bg-white'}`}>Summary</button>
       </div>
 
@@ -227,6 +243,9 @@ export default function POSPage() {
                        className="w-full h-8 pl-8 text-xs bg-slate-50" 
                        value={customerSearchTerm}
                        onChange={(e) => setCustomerSearchTerm(e.target.value)}
+                       onKeyDown={(e) => {
+                         if (e.key === 'Enter') setCustomerDropdownOpen(false);
+                       }}
                      />
                   </div>
                   <div 
@@ -250,9 +269,15 @@ export default function POSPage() {
                   {customers.filter(c => c.name.toLowerCase().includes(customerSearchTerm.toLowerCase()) || c.id.toLowerCase().includes(customerSearchTerm.toLowerCase())).map(c => (
                     <div 
                       key={c.id} 
-                      className="flex items-center gap-3 p-2 hover:bg-[var(--color-aqua)]/5 rounded-md cursor-pointer transition-colors" 
+                      tabIndex={0}
+                      className="flex items-center gap-3 p-2 hover:bg-[var(--color-aqua)]/5 rounded-md cursor-pointer transition-colors focus:bg-[var(--color-aqua)]/10 focus:outline-none" 
                       onClick={() => {
-                        setSelectedCustomerIds(prev => prev.includes(c.id) ? prev.filter(id => id !== c.id) : [...prev, c.id]);
+                        if (!selectedCustomerIds.includes(c.id)) setSelectedCustomerIds(prev => [...prev, c.id]);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          if (!selectedCustomerIds.includes(c.id)) setSelectedCustomerIds(prev => [...prev, c.id]);
+                        }
                       }}
                     >
                       <input 
@@ -339,7 +364,7 @@ export default function POSPage() {
         <div className={`w-full lg:w-[38%] h-full bg-white rounded-xl shadow-sm border border-slate-200 flex-col shrink-0 lg:shrink p-4 md:p-6 max-w-full overflow-hidden ${mobileTab === 'cart' ? 'flex' : 'hidden md:flex'}`}>
           <div className="pb-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-slate-50/50 rounded-t-xl -mx-4 md:-mx-6 -mt-4 md:-mt-6 px-4 md:px-6 pt-4 md:pt-6">
             <div>
-              <p className="text-xs text-slate-500 font-medium">{t("billingTo")}</p>
+              <p className="text-xs text-slate-500 font-medium">{t("billingTo")} / Cart <span className="font-bold text-slate-800">({activeCart.length} items)</span></p>
               <h2 className="font-bold text-slate-900 flex items-center gap-2">
                 {activeCustomer.name} <span className="text-xs font-normal text-slate-500 bg-white border px-1.5 py-0.5 rounded">({activeCustomer.id})</span>
               </h2>
@@ -380,7 +405,7 @@ export default function POSPage() {
                             min="1" 
                             value={item.qty || ''} 
                             onChange={(e) => handleQtyChange(item.id, Number(e.target.value))}
-                            className="w-16 h-8 border border-slate-200 rounded-md text-center text-xs focus:outline-none focus:border-[var(--color-aqua)] mx-auto block"
+                            className="w-16 h-8 border border-slate-200 rounded-md text-center text-xs focus:outline-none focus:border-[var(--color-aqua)] mx-auto block [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                         </td>
                         <td className="py-3">
@@ -392,7 +417,7 @@ export default function POSPage() {
                               step="0.01" 
                               value={item.price || ''} 
                               onChange={(e) => handlePriceChange(item.id, Number(e.target.value))}
-                              className="w-16 h-8 border border-slate-200 rounded-md text-right text-xs px-1 focus:outline-none focus:border-[var(--color-aqua)]"
+                              className="w-16 h-8 border border-slate-200 rounded-md text-right text-xs px-1 focus:outline-none focus:border-[var(--color-aqua)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                           </div>
                         </td>
@@ -429,7 +454,7 @@ export default function POSPage() {
                             min="1" 
                             value={item.qty || ''} 
                             onChange={(e) => handleQtyChange(item.id, Number(e.target.value))}
-                            className="w-full h-8 border border-slate-200 rounded-md text-center text-xs focus:outline-none focus:border-[var(--color-aqua)] bg-slate-50"
+                            className="w-full h-8 border border-slate-200 rounded-md text-center text-xs focus:outline-none focus:border-[var(--color-aqua)] bg-slate-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                         </div>
                         <div className="flex flex-col gap-1">
@@ -442,7 +467,7 @@ export default function POSPage() {
                               step="0.01" 
                               value={item.price || ''} 
                               onChange={(e) => handlePriceChange(item.id, Number(e.target.value))}
-                              className="w-full h-8 pl-5 pr-1 border border-slate-200 rounded-md text-right text-xs focus:outline-none focus:border-[var(--color-aqua)] bg-slate-50"
+                              className="w-full h-8 pl-5 pr-1 border border-slate-200 rounded-md text-right text-xs focus:outline-none focus:border-[var(--color-aqua)] bg-slate-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                           </div>
                         </div>
@@ -485,13 +510,22 @@ export default function POSPage() {
         </div>
 
         {/* Column 3: Active Sessions & Summary */}
-        <div className={`w-full lg:w-[28%] flex-col gap-4 shrink-0 lg:shrink max-w-full overflow-hidden h-full ${mobileTab === 'summary' ? 'flex' : 'hidden md:flex'}`}>
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 flex flex-col">
-             <div className="p-4 border-b border-slate-100">
+        <div className={`w-full lg:w-[28%] flex-col gap-4 shrink-0 lg:shrink max-w-full h-full relative ${mobileTab === 'summary' ? 'flex' : 'hidden md:flex'}`}>
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 min-h-0 flex flex-col">
+             <div className="p-4 border-b border-slate-100 shrink-0">
                <h2 className="font-bold text-slate-900">{t("activeSessions")}</h2>
+               <div className="relative mt-3 w-full">
+                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                 <Input 
+                   placeholder="Search active sessions..." 
+                   className="w-full h-8 pl-8 text-xs bg-slate-50" 
+                   value={activeSessionSearchTerm}
+                   onChange={(e) => setActiveSessionSearchTerm(e.target.value)}
+                 />
+               </div>
              </div>
-             <div className="flex-1 p-2 space-y-2 overflow-y-scroll custom-scrollbar max-h-[250px]">
-                {customers.filter(c => carts[c.id]?.length > 0).map(c => {
+             <div className="flex-1 p-2 space-y-2 overflow-y-auto custom-scrollbar">
+                {customers.filter(c => carts[c.id]?.length > 0 && (activeSessionSearchTerm === "" || c.name.toLowerCase().includes(activeSessionSearchTerm.toLowerCase()))).map(c => {
                   const cart = carts[c.id];
                   const cSub = cart.reduce((sum, item) => sum + item.total, 0);
                   const cTotal = cSub + (cSub * 0.08);
@@ -510,6 +544,18 @@ export default function POSPage() {
                         <p className="text-xs text-slate-500">{cart.length} items</p>
                       </div>
                       <div className="flex flex-col items-end text-xs shrink-0 pr-2">
+                        <div className="flex items-center gap-2 mb-1">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteSessionId(c.id);
+                            }} 
+                            className="text-slate-300 hover:text-red-500 transition-colors bg-white/50 rounded-md p-1"
+                            title="Delete Session"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                         <span className="text-slate-500">Subtotal: RS {cSub.toFixed(2)}</span>
                         <span className="text-slate-500">Comm (8%): RS {(cSub * 0.08).toFixed(2)}</span>
                         <span className={`font-bold text-sm mt-1 ${isActive ? 'text-[var(--color-aqua)]' : 'text-slate-900'}`}>Total: RS {cTotal.toFixed(2)}</span>
@@ -556,6 +602,21 @@ export default function POSPage() {
       </div>
 
       {/* Modals */}
+      <Dialog open={!!deleteSessionId} onOpenChange={(open) => !open && setDeleteSessionId(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl text-red-600">Delete Session?</DialogTitle>
+            <DialogDescription className="text-slate-700 mt-2">
+              Are you sure you want to delete this session? The current bill and customer session will be completely removed.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setDeleteSessionId(null)}>Cancel</Button>
+            <Button onClick={confirmDeleteSession} className="bg-red-600 hover:bg-red-700 text-white">OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={addCustomerModal} onOpenChange={setAddCustomerModal}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
