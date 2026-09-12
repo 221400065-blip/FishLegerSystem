@@ -107,7 +107,7 @@ export function Navbar() {
       </div>
 
       {/* Centered Search Bar */}
-      <div className="relative w-full order-3 md:order-2 md:flex-1 max-w-2xl mx-auto flex justify-center mt-2 md:mt-0">
+      <div className="relative w-full order-3 md:order-2 md:flex-1 max-w-md mx-auto flex justify-center mt-2 md:mt-0">
          <div className="relative w-full">
            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
            <input 

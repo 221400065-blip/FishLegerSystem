@@ -33,8 +33,11 @@ export default function POSPage() {
   const [payAllModal, setPayAllModal] = useState(false);
   const [addCustomerModal, setAddCustomerModal] = useState(false);
   const [activeTab, setActiveTab] = useState("All");
+  const [mobileTab, setMobileTab] = useState("products");
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
   const [productSearchTerm, setProductSearchTerm] = useState("");
+  const [customerDropdownOpen, setCustomerDropdownOpen] = useState(false);
+  const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>(["C-001"]);
   const commissionRate = 8; // Fixed strictly at 8%
 
   const [activeCustomerId, setActiveCustomerId] = useState("C-001");
@@ -58,10 +61,7 @@ export default function POSPage() {
       const cart = prev[activeCustomerId] || [];
       const existing = cart.find(i => i.id === product.id);
       if (existing) {
-        return {
-          ...prev,
-          [activeCustomerId]: cart.map(i => i.id === product.id ? { ...i, qty: i.qty + 1, total: (i.qty + 1) * i.price } : i)
-        };
+        return prev; // Do not increment automatically
       }
       return {
         ...prev,
@@ -186,11 +186,18 @@ export default function POSPage() {
         </div>
       </header>
 
+      {/* Mobile Tab Switchers */}
+      <div className="md:hidden flex border-b border-slate-200 bg-white mb-4 rounded-xl shrink-0 overflow-hidden shadow-sm">
+        <button onClick={() => setMobileTab("products")} className={`flex-1 py-3 text-sm font-medium transition-colors ${mobileTab === 'products' ? 'bg-[var(--color-aqua)]/10 text-[var(--color-aqua)] border-b-2 border-[var(--color-aqua)]' : 'text-slate-500 bg-white'}`}>Products</button>
+        <button onClick={() => setMobileTab("cart")} className={`flex-1 py-3 text-sm font-medium transition-colors ${mobileTab === 'cart' ? 'bg-[var(--color-aqua)]/10 text-[var(--color-aqua)] border-b-2 border-[var(--color-aqua)]' : 'text-slate-500 bg-white'}`}>Cart / Billing</button>
+        <button onClick={() => setMobileTab("summary")} className={`flex-1 py-3 text-sm font-medium transition-colors ${mobileTab === 'summary' ? 'bg-[var(--color-aqua)]/10 text-[var(--color-aqua)] border-b-2 border-[var(--color-aqua)]' : 'text-slate-500 bg-white'}`}>Summary</button>
+      </div>
+
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden gap-4 pb-10 lg:pb-0 w-full max-w-full overflow-x-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden gap-4 pb-4 lg:pb-0 w-full max-w-full overflow-x-hidden">
         
         {/* Column 1: Customer & Product Catalog */}
-        <div className="w-full lg:w-1/3 flex-col gap-4 flex shrink-0 lg:shrink max-w-full overflow-x-hidden">
+        <div className={`w-full lg:w-1/3 flex-col gap-4 shrink-0 lg:shrink max-w-full overflow-hidden h-full ${mobileTab === 'products' ? 'flex' : 'hidden md:flex'}`}>
           
           {/* Customer Selection */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col shrink-0">
@@ -201,31 +208,90 @@ export default function POSPage() {
               </Button>
             </div>
             <div className="relative mb-3 w-full">
-               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-               <Input 
-                 placeholder="Search customer..." 
-                 className="w-full h-8 pl-8 text-xs bg-slate-50" 
-                 value={customerSearchTerm}
-                 onChange={(e) => setCustomerSearchTerm(e.target.value)}
-               />
+              <button 
+                onClick={() => setCustomerDropdownOpen(!customerDropdownOpen)} 
+                className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm bg-slate-50 flex items-center justify-between focus:outline-none focus:border-[var(--color-aqua)] hover:bg-slate-100 transition-colors"
+              >
+                <span className="font-medium text-slate-700">
+                  {selectedCustomerIds.length > 0 ? `Selected Customers (${selectedCustomerIds.length})` : "Filter Customers"}
+                </span>
+                <ChevronDown size={14} className="text-slate-500" />
+              </button>
+              
+              {customerDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-50 p-2 max-h-64 overflow-y-auto custom-scrollbar">
+                  <div className="relative mb-2">
+                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                     <Input 
+                       placeholder="Search customer..." 
+                       className="w-full h-8 pl-8 text-xs bg-slate-50" 
+                       value={customerSearchTerm}
+                       onChange={(e) => setCustomerSearchTerm(e.target.value)}
+                     />
+                  </div>
+                  <div 
+                    className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded-md cursor-pointer border-b border-slate-100 mb-1" 
+                    onClick={() => {
+                      if (selectedCustomerIds.length === customers.length) {
+                        setSelectedCustomerIds([]);
+                      } else {
+                        setSelectedCustomerIds(customers.map(c => c.id));
+                      }
+                    }}
+                  >
+                    <input 
+                      type="checkbox" 
+                      checked={selectedCustomerIds.length === customers.length} 
+                      readOnly 
+                      className="cursor-pointer accent-[var(--color-aqua)] w-4 h-4" 
+                    />
+                    <span className="text-sm font-bold text-slate-700">Select All / Deselect All</span>
+                  </div>
+                  {customers.filter(c => c.name.toLowerCase().includes(customerSearchTerm.toLowerCase()) || c.id.toLowerCase().includes(customerSearchTerm.toLowerCase())).map(c => (
+                    <div 
+                      key={c.id} 
+                      className="flex items-center gap-3 p-2 hover:bg-[var(--color-aqua)]/5 rounded-md cursor-pointer transition-colors" 
+                      onClick={() => {
+                        setSelectedCustomerIds(prev => prev.includes(c.id) ? prev.filter(id => id !== c.id) : [...prev, c.id]);
+                      }}
+                    >
+                      <input 
+                        type="checkbox" 
+                        checked={selectedCustomerIds.includes(c.id)} 
+                        readOnly 
+                        className="cursor-pointer accent-[var(--color-aqua)] w-4 h-4" 
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-slate-900">{c.name}</span>
+                        <span className="text-[10px] text-slate-500">{c.id}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar w-full">
-              {customers.filter(c => c.name.toLowerCase().includes(customerSearchTerm.toLowerCase()) || c.id.toLowerCase().includes(customerSearchTerm.toLowerCase())).map((c, i) => (
+            <div className="flex gap-2 w-full overflow-x-auto pb-2 custom-scrollbar mt-1">
+              {customers.filter(c => selectedCustomerIds.includes(c.id)).map(c => (
                 <div 
                   key={c.id} 
                   onClick={() => setActiveCustomerId(c.id)}
-                  className={`shrink-0 px-3 py-2 border rounded-lg cursor-pointer transition-colors whitespace-nowrap
-                  ${c.id === activeCustomerId ? 'border-[var(--color-aqua)] bg-[var(--color-aqua)]/5 shadow-sm' : 'border-slate-200 hover:border-slate-300'}`}
+                  className={`shrink-0 px-3 py-1.5 border rounded-lg cursor-pointer transition-colors whitespace-nowrap min-w-[110px] shadow-sm
+                  ${c.id === activeCustomerId ? 'border-[var(--color-aqua)] bg-[var(--color-aqua)]/5' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
                 >
                   <p className={`text-xs font-bold ${c.id === activeCustomerId ? 'text-[var(--color-ocean-blue)]' : 'text-slate-700'}`}>{c.name}</p>
-                  <p className="text-[10px] text-slate-500">{c.id}</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">{c.id}</p>
                 </div>
               ))}
+              {selectedCustomerIds.length === 0 && (
+                <div className="text-center w-full py-4 text-slate-400 text-sm border border-dashed border-slate-200 rounded-lg">
+                  No customers selected.
+                </div>
+              )}
             </div>
           </div>
 
           {/* Product Catalog */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 min-h-[500px] lg:min-h-0 lg:flex-1 flex flex-col w-full max-w-full overflow-x-hidden">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 lg:min-h-0 flex-1 flex flex-col w-full max-w-full overflow-hidden">
             <div className="relative mb-3 shrink-0 w-full">
                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                <Input 
@@ -270,7 +336,7 @@ export default function POSPage() {
         </div>
 
         {/* Column 2: Active Billing Cart */}
-        <div className="w-full lg:w-[38%] min-h-[400px] lg:min-h-0 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col shrink-0 lg:shrink p-4 md:p-6 mt-4 lg:mt-0 max-w-full overflow-x-hidden">
+        <div className={`w-full lg:w-[38%] h-full bg-white rounded-xl shadow-sm border border-slate-200 flex-col shrink-0 lg:shrink p-4 md:p-6 max-w-full overflow-hidden ${mobileTab === 'cart' ? 'flex' : 'hidden md:flex'}`}>
           <div className="pb-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-slate-50/50 rounded-t-xl -mx-4 md:-mx-6 -mt-4 md:-mt-6 px-4 md:px-6 pt-4 md:pt-6">
             <div>
               <p className="text-xs text-slate-500 font-medium">{t("billingTo")}</p>
@@ -281,7 +347,7 @@ export default function POSPage() {
             {/* Action buttons removed as requested */}
           </div>
 
-          <div className="flex-1 overflow-y-auto py-4 custom-scrollbar w-full">
+          <div className="flex-1 overflow-y-auto py-4 custom-scrollbar w-full max-h-[300px]">
             <div className="w-full max-w-full pb-2">
               {/* Desktop Table */}
               <div className="hidden md:block overflow-x-auto w-full">
@@ -419,12 +485,12 @@ export default function POSPage() {
         </div>
 
         {/* Column 3: Active Sessions & Summary */}
-        <div className="w-full lg:w-[28%] flex flex-col gap-4 shrink-0 lg:shrink mt-4 lg:mt-0 max-w-full overflow-x-hidden">
+        <div className={`w-full lg:w-[28%] flex-col gap-4 shrink-0 lg:shrink max-w-full overflow-hidden h-full ${mobileTab === 'summary' ? 'flex' : 'hidden md:flex'}`}>
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 flex flex-col">
              <div className="p-4 border-b border-slate-100">
                <h2 className="font-bold text-slate-900">{t("activeSessions")}</h2>
              </div>
-             <div className="flex-1 p-2 space-y-2 overflow-y-auto custom-scrollbar">
+             <div className="flex-1 p-2 space-y-2 overflow-y-scroll custom-scrollbar max-h-[250px]">
                 {customers.filter(c => carts[c.id]?.length > 0).map(c => {
                   const cart = carts[c.id];
                   const cSub = cart.reduce((sum, item) => sum + item.total, 0);

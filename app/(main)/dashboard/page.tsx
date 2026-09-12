@@ -109,13 +109,13 @@ export default function DashboardPage() {
         <div onClick={() => setSalesModalOpen(true)} className="cursor-pointer h-full">
           <Card className="rounded-xl shadow-sm border-slate-200 hover:border-[var(--color-aqua)] transition-colors h-full">
             <CardContent className="p-6">
-              <div className="flex justify-between items-start">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">SALES ON {formattedDate}</p>
-                  <h2 className="text-3xl font-bold text-slate-900">{currentMetrics.sales}</h2>
+              <div className="flex justify-between items-start gap-1">
+                <div className="space-y-1 flex-1 min-w-0">
+                  <p className="font-bold text-slate-500 uppercase whitespace-nowrap block text-[10px]" title={`SALES ON ${formattedDate}`}>SALES ON {formattedDate}</p>
+                  <h2 className="text-3xl font-medium text-slate-900">{currentMetrics.sales}</h2>
                 </div>
-                <div className="w-10 h-10 bg-[var(--color-aqua)]/10 text-[var(--color-aqua)] rounded-full flex items-center justify-center">
-                  <DollarSign size={20} />
+                <div className="w-8 h-8 bg-[var(--color-aqua)]/10 text-[var(--color-aqua)] rounded-full flex items-center justify-center shrink-0">
+                  <DollarSign size={16} />
                 </div>
               </div>
               <div className="mt-4 flex items-center">
@@ -130,13 +130,13 @@ export default function DashboardPage() {
         <Link href="/suppliers">
           <Card className="rounded-xl shadow-sm border-slate-200 hover:border-[var(--color-aqua)] transition-colors cursor-pointer h-full">
             <CardContent className="p-6">
-              <div className="flex justify-between items-start">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">ACTIVE SUPPLIERS</p>
-                  <h2 className="text-3xl font-bold text-slate-900">{currentMetrics.suppliers}</h2>
+              <div className="flex justify-between items-start gap-1">
+                <div className="space-y-1 flex-1 min-w-0">
+                  <p className="font-bold text-slate-500 uppercase whitespace-nowrap block text-[10px]" title="ACTIVE SUPPLIERS">ACTIVE SUPPLIERS</p>
+                  <h2 className="text-3xl font-medium text-slate-900">{currentMetrics.suppliers}</h2>
                 </div>
-                <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center">
-                  <Truck size={20} />
+                <div className="w-8 h-8 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center shrink-0">
+                  <Truck size={16} />
                 </div>
               </div>
               <div className="mt-4 flex items-center">
@@ -151,13 +151,13 @@ export default function DashboardPage() {
         <Link href="/customers">
           <Card className="rounded-xl shadow-sm border-slate-200 hover:border-[var(--color-aqua)] transition-colors cursor-pointer h-full">
             <CardContent className="p-6">
-              <div className="flex justify-between items-start">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">ACTIVE CUSTOMERS</p>
-                  <h2 className="text-3xl font-bold text-slate-900">{customers.length}</h2>
+              <div className="flex justify-between items-start gap-1">
+                <div className="space-y-1 flex-1 min-w-0">
+                  <p className="font-bold text-slate-500 uppercase whitespace-nowrap block text-[10px]" title="ACTIVE CUSTOMERS">ACTIVE CUSTOMERS</p>
+                  <h2 className="text-3xl font-medium text-slate-900">{customers.length}</h2>
                 </div>
-                <div className="w-10 h-10 bg-blue-100 text-[var(--color-ocean-blue)] rounded-full flex items-center justify-center">
-                  <ShoppingCart size={20} />
+                <div className="w-8 h-8 bg-blue-100 text-[var(--color-ocean-blue)] rounded-full flex items-center justify-center shrink-0">
+                  <ShoppingCart size={16} />
                 </div>
               </div>
               <div className="mt-4 flex items-center">
@@ -172,13 +172,13 @@ export default function DashboardPage() {
         <div onClick={() => setProfitModalOpen(true)} className="cursor-pointer h-full">
           <Card className="rounded-xl shadow-sm border-slate-200 hover:border-[var(--color-aqua)] transition-colors h-full">
             <CardContent className="p-6">
-              <div className="flex justify-between items-start">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">PROFIT ON {formattedDate}</p>
-                  <h2 className="text-3xl font-bold text-slate-900">{currentMetrics.profit}</h2>
+              <div className="flex justify-between items-start gap-1">
+                <div className="space-y-1 flex-1 min-w-0">
+                  <p className="font-bold text-slate-500 uppercase whitespace-nowrap block text-[10px]" title={`PROFIT ON ${formattedDate}`}>PROFIT ON {formattedDate}</p>
+                  <h2 className="text-3xl font-medium text-slate-900">{currentMetrics.profit}</h2>
                 </div>
-                <div className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
-                  <Percent size={20} />
+                <div className="w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center shrink-0">
+                  <Percent size={16} />
                 </div>
               </div>
               <div className="mt-4 flex items-center">

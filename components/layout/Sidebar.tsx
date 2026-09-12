@@ -13,6 +13,8 @@ import {
   LogOut,
   Menu,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/lib/LanguageContext";
@@ -49,14 +51,18 @@ export function Sidebar() {
   ];
 
   return (
-    <aside className={`fixed left-0 top-0 z-50 h-screen bg-[var(--color-ocean-blue)] transition-all duration-300 shadow-xl flex flex-col ${isSidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0 md:w-16'}`}>
+    <aside 
+      className={`fixed left-0 top-0 z-50 h-screen bg-[var(--color-ocean-blue)] transition-all duration-300 shadow-xl flex flex-col ${isSidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0 md:w-16'}`}
+      onMouseEnter={() => setIsSidebarOpen(true)}
+      onMouseLeave={() => setIsSidebarOpen(false)}
+    >
       <div className={`h-20 flex items-center px-4 relative shrink-0 border-b border-white/10 ${isSidebarOpen ? 'justify-between' : 'justify-center'}`}>
-        <div className={`flex items-center gap-3 overflow-hidden whitespace-nowrap transition-opacity duration-300 ${!isSidebarOpen ? 'opacity-0 w-0 hidden md:block' : ''}`}>
+        <div className={`flex items-center gap-3 overflow-hidden whitespace-nowrap transition-all duration-300 ${!isSidebarOpen ? 'w-0 opacity-0 hidden md:block' : 'w-auto opacity-100'}`}>
           <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center shrink-0">
              <MonitorSmartphone size={18} className="text-[var(--color-aqua)]" />
           </div>
-          <span className="font-bold text-lg tracking-wide text-white">
-            Ledger System
+          <span className="font-bold text-sm tracking-wide text-white">
+            POS & Ledger System
           </span>
         </div>
         
@@ -64,13 +70,16 @@ export function Sidebar() {
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className={`p-2 rounded-lg hover:bg-white/10 transition-all text-white hidden md:flex items-center justify-center shrink-0 ${!isSidebarOpen ? 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10' : ''}`}
         >
-          <Menu size={20} />
+          {isSidebarOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
+        </button>
+        <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-2 text-white absolute right-4 top-1/2 -translate-y-1/2">
+           <ChevronLeft size={20} />
         </button>
       </div>
       
       <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar">
         <nav className="flex-1 px-3 space-y-1.5 mt-6">
-          <p className={`text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 px-2 transition-opacity duration-300 ${!isSidebarOpen && 'opacity-0 w-0 hidden md:block'}`}>
+          <p className={`text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 px-2 transition-all duration-300 ${!isSidebarOpen ? 'opacity-0 h-0 overflow-hidden !mb-0' : 'opacity-100'}`}>
             Main Menu
           </p>
         {navItems.map((item) => {
@@ -101,9 +110,11 @@ export function Sidebar() {
                   }
                 }}
               >
-                <div className="flex items-center gap-3">
-                  <item.icon size={18} className="shrink-0" />
-                  <span className={`whitespace-nowrap transition-opacity duration-300 ${!isSidebarOpen && 'opacity-0 w-0 hidden md:block'}`}>{t(item.id as any)}</span>
+                <div className="flex items-center gap-3 relative">
+                  <div className={`flex items-center justify-center shrink-0 ${!isSidebarOpen ? 'mx-auto' : ''}`}>
+                    <item.icon size={18} />
+                  </div>
+                  <span className={`whitespace-nowrap transition-all duration-300 ${!isSidebarOpen ? 'opacity-0 w-0 overflow-hidden absolute left-10' : 'opacity-100'}`}>{t(item.id as any)}</span>
                 </div>
                 {hasChildren && isSidebarOpen && (
                   <ChevronDown size={16} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -148,7 +159,7 @@ export function Sidebar() {
               <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-[var(--color-ocean-blue)] rounded-full"></span>
             </div>
             
-            <div className={`whitespace-nowrap transition-opacity duration-300 ${!isSidebarOpen && 'opacity-0 w-0 hidden md:block'}`}>
+            <div className={`whitespace-nowrap transition-all duration-300 ${!isSidebarOpen ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 w-auto'}`}>
               <p className="text-sm font-semibold text-white">Store Manager</p>
               <p className="text-xs text-slate-400">Admin</p>
             </div>
