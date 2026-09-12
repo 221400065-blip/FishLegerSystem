@@ -8,7 +8,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  Ayesha
   const router = useRouter();
 
   const handleSignIn = (e: React.FormEvent) => {
@@ -19,7 +18,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[var(--color-canvas)] flex flex-col items-center justify-center p-4">
       <div className="bg-white p-8 sm:p-10 rounded-2xl shadow-sm border border-slate-200 w-full max-w-md">
-        
+
         <div className="flex items-center gap-3 mb-8">
           <div className="w-10 h-10 bg-[var(--color-ocean-blue)] rounded-xl flex items-center justify-center">
             <MonitorSmartphone className="text-[var(--color-aqua)]" size={20} />
@@ -40,11 +39,11 @@ export default function LoginPage() {
             <label className="text-xs font-bold text-slate-900 uppercase tracking-wider block">
               Email
             </label>
-            <Input 
-              type="email" 
-              placeholder="samar@gmail.com" 
+            <Input
+              type="email"
+              placeholder="samar@gmail.com"
               defaultValue="samar@gmail.com"
-              required 
+              required
               className="h-12 bg-slate-50/50"
             />
           </div>
@@ -53,11 +52,11 @@ export default function LoginPage() {
             <label className="text-xs font-bold text-slate-900 uppercase tracking-wider block">
               Password
             </label>
-            <Input 
-              type="password" 
-              placeholder="••••••••" 
+            <Input
+              type="password"
+              placeholder="••••••••"
               defaultValue="samar123"
-              required 
+              required
               className="h-12 bg-slate-50/50"
             />
           </div>
@@ -83,7 +82,7 @@ export default function LoginPage() {
         </form>
 
       </div>
-      
+
       <p className="mt-8 text-sm text-slate-400">
         2026 Ledger System All rights reserved
       </p>
