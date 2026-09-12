@@ -33,7 +33,7 @@ export default function CustomersPage() {
     return matchesTab && matchesSearch;
   });
 
-  const itemsPerPage = 8;
+  const itemsPerPage = 5;
   const totalPages = Math.max(1, Math.ceil(filteredCustomers.length / itemsPerPage));
   const paginatedCustomers = filteredCustomers.slice((activePage - 1) * itemsPerPage, activePage * itemsPerPage);
 
