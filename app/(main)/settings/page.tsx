@@ -13,12 +13,16 @@ export default function SettingsPage() {
   const { t, customerBillFormat, setCustomerBillFormat, supplierBillFormat, setSupplierBillFormat, language, setLanguage: setGlobalLanguage, theme, setTheme } = useLanguage();
   const [activeTab, setActiveTab] = useState("General");
   
-  // Local state for language choice before saving
+  // Local state for choices before saving
   const [selectedLang, setSelectedLang] = useState(language);
+  const [selectedCustomerBillFormat, setSelectedCustomerBillFormat] = useState(customerBillFormat);
+  const [selectedSupplierBillFormat, setSelectedSupplierBillFormat] = useState(supplierBillFormat);
 
   useEffect(() => {
     setSelectedLang(language);
-  }, [language]);
+    setSelectedCustomerBillFormat(customerBillFormat);
+    setSelectedSupplierBillFormat(supplierBillFormat);
+  }, [language, customerBillFormat, supplierBillFormat]);
 
   // Security State
   const [passwordForm, setPasswordForm] = useState({ current: "", new: "", confirm: "" });
@@ -36,6 +40,8 @@ export default function SettingsPage() {
 
   const handleGeneralSave = () => {
     setGlobalLanguage(selectedLang as any);
+    setCustomerBillFormat(selectedCustomerBillFormat as any);
+    setSupplierBillFormat(selectedSupplierBillFormat as any);
   };
 
   const handleUpdatePassword = () => {
@@ -153,24 +159,24 @@ export default function SettingsPage() {
                   <div className="space-y-3">
                     <label className="text-sm font-medium text-slate-700">Customer Bill Format</label>
                     <div className="flex gap-4">
-                      <label className={`flex-1 flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition-all ${customerBillFormat === 'thermal' ? 'border-[var(--color-aqua)] bg-[var(--color-aqua)]/5 ring-1 ring-[var(--color-aqua)]' : 'border-slate-200 hover:border-slate-300'}`}>
+                      <label className={`flex-1 flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition-all ${selectedCustomerBillFormat === 'thermal' ? 'border-[var(--color-aqua)] bg-[var(--color-aqua)]/5 ring-1 ring-[var(--color-aqua)]' : 'border-slate-200 hover:border-slate-300'}`}>
                         <input 
                           type="radio" 
                           name="customerBillFormat" 
                           value="thermal" 
-                          checked={customerBillFormat === 'thermal'} 
-                          onChange={() => setCustomerBillFormat('thermal')} 
+                          checked={selectedCustomerBillFormat === 'thermal'} 
+                          onChange={() => setSelectedCustomerBillFormat('thermal')} 
                           className="w-4 h-4 text-[var(--color-aqua)]"
                         />
                         <span className="font-medium text-slate-900">{t("thermalBill")}</span>
                       </label>
-                      <label className={`flex-1 flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition-all ${customerBillFormat === 'simple' ? 'border-[var(--color-aqua)] bg-[var(--color-aqua)]/5 ring-1 ring-[var(--color-aqua)]' : 'border-slate-200 hover:border-slate-300'}`}>
+                      <label className={`flex-1 flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition-all ${selectedCustomerBillFormat === 'simple' ? 'border-[var(--color-aqua)] bg-[var(--color-aqua)]/5 ring-1 ring-[var(--color-aqua)]' : 'border-slate-200 hover:border-slate-300'}`}>
                         <input 
                           type="radio" 
                           name="customerBillFormat" 
                           value="simple" 
-                          checked={customerBillFormat === 'simple'} 
-                          onChange={() => setCustomerBillFormat('simple')} 
+                          checked={selectedCustomerBillFormat === 'simple'} 
+                          onChange={() => setSelectedCustomerBillFormat('simple')} 
                           className="w-4 h-4 text-[var(--color-aqua)]"
                         />
                         <span className="font-medium text-slate-900">{t("simpleBill")}</span>
@@ -182,24 +188,24 @@ export default function SettingsPage() {
                   <div className="space-y-3">
                     <label className="text-sm font-medium text-slate-700">Supplier Bill Format</label>
                     <div className="flex gap-4">
-                      <label className={`flex-1 flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition-all ${supplierBillFormat === 'thermal' ? 'border-[var(--color-aqua)] bg-[var(--color-aqua)]/5 ring-1 ring-[var(--color-aqua)]' : 'border-slate-200 hover:border-slate-300'}`}>
+                      <label className={`flex-1 flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition-all ${selectedSupplierBillFormat === 'thermal' ? 'border-[var(--color-aqua)] bg-[var(--color-aqua)]/5 ring-1 ring-[var(--color-aqua)]' : 'border-slate-200 hover:border-slate-300'}`}>
                         <input 
                           type="radio" 
                           name="supplierBillFormat" 
                           value="thermal" 
-                          checked={supplierBillFormat === 'thermal'} 
-                          onChange={() => setSupplierBillFormat('thermal')} 
+                          checked={selectedSupplierBillFormat === 'thermal'} 
+                          onChange={() => setSelectedSupplierBillFormat('thermal')} 
                           className="w-4 h-4 text-[var(--color-aqua)]"
                         />
                         <span className="font-medium text-slate-900">{t("thermalBill")}</span>
                       </label>
-                      <label className={`flex-1 flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition-all ${supplierBillFormat === 'simple' ? 'border-[var(--color-aqua)] bg-[var(--color-aqua)]/5 ring-1 ring-[var(--color-aqua)]' : 'border-slate-200 hover:border-slate-300'}`}>
+                      <label className={`flex-1 flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition-all ${selectedSupplierBillFormat === 'simple' ? 'border-[var(--color-aqua)] bg-[var(--color-aqua)]/5 ring-1 ring-[var(--color-aqua)]' : 'border-slate-200 hover:border-slate-300'}`}>
                         <input 
                           type="radio" 
                           name="supplierBillFormat" 
                           value="simple" 
-                          checked={supplierBillFormat === 'simple'} 
-                          onChange={() => setSupplierBillFormat('simple')} 
+                          checked={selectedSupplierBillFormat === 'simple'} 
+                          onChange={() => setSelectedSupplierBillFormat('simple')} 
                           className="w-4 h-4 text-[var(--color-aqua)]"
                         />
                         <span className="font-medium text-slate-900">{t("simpleBill")}</span>

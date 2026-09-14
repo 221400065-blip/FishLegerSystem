@@ -72,24 +72,60 @@ export default function POSPage() {
     });
   };
 
-  const handleQtyChange = (itemId: string, newQty: number) => {
-    if (newQty < 1) return;
+  const handleQtyChange = (itemId: string, val: string) => {
     setCarts(prev => {
       const cart = prev[activeCustomerId] || [];
       return {
         ...prev,
-        [activeCustomerId]: cart.map(i => i.id === itemId ? { ...i, qty: newQty, total: newQty * i.price } : i)
+        [activeCustomerId]: cart.map(i => {
+          if (i.id !== itemId) return i;
+          if (val === '') return { ...i, qty: '', total: 0 };
+          const num = Number(val);
+          return { ...i, qty: num, total: num * i.price };
+        })
       };
     });
   };
 
-  const handlePriceChange = (itemId: string, newPrice: number) => {
-    if (newPrice < 0) return;
+  const handleQtyBlur = (itemId: string) => {
     setCarts(prev => {
       const cart = prev[activeCustomerId] || [];
       return {
         ...prev,
-        [activeCustomerId]: cart.map(i => i.id === itemId ? { ...i, price: newPrice, total: i.qty * newPrice } : i)
+        [activeCustomerId]: cart.map(i => {
+          if (i.id !== itemId) return i;
+          if (i.qty === '' || Number(i.qty) < 1) return { ...i, qty: 1, total: 1 * i.price };
+          return i;
+        })
+      };
+    });
+  };
+
+  const handlePriceChange = (itemId: string, val: string) => {
+    setCarts(prev => {
+      const cart = prev[activeCustomerId] || [];
+      return {
+        ...prev,
+        [activeCustomerId]: cart.map(i => {
+          if (i.id !== itemId) return i;
+          if (val === '') return { ...i, price: '', total: 0 };
+          const num = Number(val);
+          return { ...i, price: num, total: Number(i.qty || 0) * num };
+        })
+      };
+    });
+  };
+
+  const handlePriceBlur = (itemId: string) => {
+    setCarts(prev => {
+      const cart = prev[activeCustomerId] || [];
+      return {
+        ...prev,
+        [activeCustomerId]: cart.map(i => {
+          if (i.id !== itemId) return i;
+          if (i.price === '' || Number(i.price) < 0) return { ...i, price: 0, total: 0 };
+          return i;
+        })
       };
     });
   };
@@ -112,7 +148,7 @@ export default function POSPage() {
   const combinedSubtotal = Object.values(carts).reduce((sum, cart) => sum + cart.reduce((s, i) => s + i.total, 0), 0);
   const totalCommission = combinedSubtotal * (commissionRate / 100);
   const grandTotal = combinedSubtotal + totalCommission;
-  const totalItems = Object.values(carts).reduce((sum, cart) => sum + cart.reduce((s, i) => s + i.qty, 0), 0);
+  const totalItems = Object.values(carts).reduce((sum, cart) => sum + cart.reduce((s, i) => s + (Number(i.qty) || 0), 0), 0);
 
   const handlePrint = () => {
     // Set print format class on body
@@ -171,7 +207,7 @@ export default function POSPage() {
         </div>
 
         <div className="flex items-center gap-3 md:gap-6 ml-auto">
-          <p suppressHydrationWarning className="text-xs md:text-sm text-slate-300 hidden md:block">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+          <p suppressHydrationWarning className="text-xs md:text-sm text-slate-300">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-2 md:border-l md:border-white/20 md:pl-6 cursor-pointer focus:outline-none">
               <div className="w-8 h-8 rounded-full bg-[var(--color-aqua)] flex items-center justify-center text-white shadow-sm">
@@ -210,10 +246,10 @@ export default function POSPage() {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden gap-4 pb-4 lg:pb-0 w-full max-w-full overflow-x-hidden">
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 pb-4 md:pb-0 w-full max-w-full overflow-hidden h-full">
         
         {/* Column 1: Customer & Product Catalog */}
-        <div className={`w-full lg:w-1/3 flex-col gap-4 shrink-0 lg:shrink max-w-full overflow-hidden h-full ${mobileTab === 'products' ? 'flex' : 'hidden md:flex'}`}>
+        <div className={`md:col-span-4 flex-col gap-4 shrink-0 max-w-full overflow-hidden h-full ${mobileTab === 'products' ? 'flex' : 'hidden md:flex'}`}>
           
           {/* Customer Selection */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col shrink-0">
@@ -277,6 +313,7 @@ export default function POSPage() {
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           if (!selectedCustomerIds.includes(c.id)) setSelectedCustomerIds(prev => [...prev, c.id]);
+                          setCustomerDropdownOpen(false);
                         }
                       }}
                     >
@@ -342,7 +379,7 @@ export default function POSPage() {
 
             <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
               {products.filter(p => (activeTab === "All" || p.category === activeTab) && (p.name.toLowerCase().includes(productSearchTerm.toLowerCase()) || p.id.toLowerCase().includes(productSearchTerm.toLowerCase()))).map(p => (
-                <div key={p.id} className="flex items-center gap-3 p-2 border border-slate-100 rounded-lg hover:border-[var(--color-aqua)]/50 transition-colors group">
+                <div key={p.id} onClick={() => handleAddToCart(p)} className="flex items-center gap-3 p-2 border border-slate-100 rounded-lg hover:border-[var(--color-aqua)]/50 cursor-pointer transition-colors group">
                   <img src={p.image} alt={p.name} className="w-12 h-12 rounded-md object-cover bg-slate-100" />
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-semibold text-slate-900 truncate">{p.name}</h3>
@@ -351,7 +388,7 @@ export default function POSPage() {
                       {p.discount && <Badge variant="secondary" className="bg-orange-100 text-orange-700 text-[9px] px-1 py-0 h-4">{p.discount}</Badge>}
                     </div>
                   </div>
-                  <Button onClick={() => handleAddToCart(p)} size="icon" className="h-8 w-8 rounded-full bg-slate-100 text-[var(--color-ocean-blue)] hover:bg-[var(--color-aqua)] hover:text-white transition-colors shrink-0">
+                  <Button onClick={(e) => { e.stopPropagation(); handleAddToCart(p); }} size="icon" className="h-8 w-8 rounded-full bg-slate-100 text-[var(--color-ocean-blue)] hover:bg-[var(--color-aqua)] hover:text-white transition-colors shrink-0">
                     <Plus size={16} />
                   </Button>
                 </div>
@@ -361,7 +398,7 @@ export default function POSPage() {
         </div>
 
         {/* Column 2: Active Billing Cart */}
-        <div className={`w-full lg:w-[38%] h-full bg-white rounded-xl shadow-sm border border-slate-200 flex-col shrink-0 lg:shrink p-4 md:p-6 max-w-full overflow-hidden ${mobileTab === 'cart' ? 'flex' : 'hidden md:flex'}`}>
+        <div className={`md:col-span-5 h-full bg-white rounded-xl shadow-sm border border-slate-200 flex-col shrink-0 p-4 md:p-6 max-w-full overflow-hidden ${mobileTab === 'cart' ? 'flex' : 'hidden md:flex'}`}>
           <div className="pb-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-slate-50/50 rounded-t-xl -mx-4 md:-mx-6 -mt-4 md:-mt-6 px-4 md:px-6 pt-4 md:pt-6">
             <div>
               <p className="text-xs text-slate-500 font-medium">{t("billingTo")} / Cart <span className="font-bold text-slate-800">({activeCart.length} items)</span></p>
@@ -382,9 +419,8 @@ export default function POSPage() {
                       <th className="font-medium text-left pb-2 w-[35%]">PRODUCT</th>
                       <th className="font-medium text-center pb-2 w-[15%]">QTY</th>
                       <th className="font-medium text-right pb-2 w-[20%]">PRICE</th>
-                      <th className="font-medium text-right pb-2 px-2 w-[15%]">
-                        COMMISSION (RS)<br/>
-                        <span className="text-[10px] text-slate-400 font-normal">(8% Rate)</span>
+                      <th className="font-medium text-right pb-2 px-2 w-[15%] whitespace-nowrap">
+                        COMMISSION (8%)
                       </th>
                       <th className="font-medium text-right pb-2 w-[15%]">TOTAL</th>
                       <th className="font-medium text-right pb-2 w-8"></th>
@@ -403,8 +439,9 @@ export default function POSPage() {
                           <input 
                             type="number" 
                             min="1" 
-                            value={item.qty || ''} 
-                            onChange={(e) => handleQtyChange(item.id, Number(e.target.value))}
+                            value={item.qty} 
+                            onChange={(e) => handleQtyChange(item.id, e.target.value)}
+                            onBlur={() => handleQtyBlur(item.id)}
                             className="w-16 h-8 border border-slate-200 rounded-md text-center text-xs focus:outline-none focus:border-[var(--color-aqua)] mx-auto block [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                         </td>
@@ -415,8 +452,9 @@ export default function POSPage() {
                               type="number" 
                               min="0"
                               step="0.01" 
-                              value={item.price || ''} 
-                              onChange={(e) => handlePriceChange(item.id, Number(e.target.value))}
+                              value={item.price} 
+                              onChange={(e) => handlePriceChange(item.id, e.target.value)}
+                              onBlur={() => handlePriceBlur(item.id)}
                               className="w-16 h-8 border border-slate-200 rounded-md text-right text-xs px-1 focus:outline-none focus:border-[var(--color-aqua)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                           </div>
@@ -452,8 +490,9 @@ export default function POSPage() {
                           <input 
                             type="number" 
                             min="1" 
-                            value={item.qty || ''} 
-                            onChange={(e) => handleQtyChange(item.id, Number(e.target.value))}
+                            value={item.qty} 
+                            onChange={(e) => handleQtyChange(item.id, e.target.value)}
+                            onBlur={() => handleQtyBlur(item.id)}
                             className="w-full h-8 border border-slate-200 rounded-md text-center text-xs focus:outline-none focus:border-[var(--color-aqua)] bg-slate-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                         </div>
@@ -465,8 +504,9 @@ export default function POSPage() {
                               type="number" 
                               min="0"
                               step="0.01" 
-                              value={item.price || ''} 
-                              onChange={(e) => handlePriceChange(item.id, Number(e.target.value))}
+                              value={item.price} 
+                              onChange={(e) => handlePriceChange(item.id, e.target.value)}
+                              onBlur={() => handlePriceBlur(item.id)}
                               className="w-full h-8 pl-5 pr-1 border border-slate-200 rounded-md text-right text-xs focus:outline-none focus:border-[var(--color-aqua)] bg-slate-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                           </div>
@@ -510,7 +550,7 @@ export default function POSPage() {
         </div>
 
         {/* Column 3: Active Sessions & Summary */}
-        <div className={`w-full lg:w-[28%] flex-col gap-4 shrink-0 lg:shrink max-w-full h-full relative ${mobileTab === 'summary' ? 'flex' : 'hidden md:flex'}`}>
+        <div className={`md:col-span-3 flex-col gap-3 shrink-0 max-w-full h-full min-h-0 relative overflow-y-auto hide-scrollbar ${mobileTab === 'summary' ? 'flex' : 'hidden md:flex'}`}>
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 min-h-0 flex flex-col">
              <div className="p-4 border-b border-slate-100 shrink-0">
                <h2 className="font-bold text-slate-900">{t("activeSessions")}</h2>
@@ -566,13 +606,13 @@ export default function POSPage() {
              </div>
           </div>
 
-          <div className="bg-[var(--color-ocean-blue)] rounded-xl shadow-md p-5 md:p-6 text-white shrink-0 relative overflow-hidden w-full max-w-full">
+          <div className="bg-[var(--color-ocean-blue)] rounded-xl shadow-md p-4 text-white shrink-0 relative overflow-hidden w-full max-w-full">
             <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/5 rounded-full blur-2xl"></div>
             <div className="absolute -left-6 -bottom-6 w-32 h-32 bg-[var(--color-aqua)]/10 rounded-full blur-2xl"></div>
             
-            <h3 className="text-slate-300 text-sm font-medium mb-4 uppercase tracking-wider relative z-10 px-1">{t("grandSummary")}</h3>
+            <h3 className="text-slate-300 text-xs font-medium mb-3 uppercase tracking-wider relative z-10 px-1">{t("grandSummary")}</h3>
             
-            <div className="space-y-3 text-sm relative z-10 px-1 pr-4">
+            <div className="space-y-2 text-sm relative z-10 px-1 pr-4">
               <div className="flex justify-between items-center w-full gap-4">
                 <span className="text-slate-300 truncate">Total Items</span>
                 <span className="font-semibold shrink-0">{totalItems}</span>
@@ -587,13 +627,13 @@ export default function POSPage() {
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-white/20 relative z-10 px-1">
-              <p className="text-slate-300 text-xs mb-1">{t("grandTotal")}</p>
-              <h2 className="text-3xl md:text-4xl font-bold text-[var(--color-aqua)] tracking-tight truncate">RS {grandTotal.toFixed(2)}</h2>
+            <div className="mt-4 pt-3 border-t border-white/20 relative z-10 px-1">
+              <p className="text-slate-300 text-[10px] mb-1">{t("grandTotal")}</p>
+              <h2 className="text-2xl md:text-3xl font-bold text-[var(--color-aqua)] tracking-tight truncate">RS {grandTotal.toFixed(2)}</h2>
             </div>
 
-            <div className="w-full px-1 mt-6">
-              <Button onClick={() => setPayAllModal(true)} className="w-full mx-auto h-12 bg-orange-600 hover:bg-orange-700 text-white font-bold text-base shadow-sm relative z-10 block">
+            <div className="w-full px-1 mt-4">
+              <Button onClick={() => setPayAllModal(true)} className="w-full mx-auto h-10 md:h-11 bg-orange-600 hover:bg-orange-700 text-white font-bold text-sm shadow-sm relative z-10 block">
                 Save Invoice
               </Button>
             </div>

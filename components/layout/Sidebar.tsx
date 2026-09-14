@@ -76,21 +76,21 @@ export function Sidebar() {
           </div>
         )}
         
-        {/* Pin/Lock Button (Only visible when expanded on Desktop) */}
+        {/* Pin/Lock & Close Buttons */}
         {expanded && (
-          <button 
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-2 rounded-lg hover:bg-white/10 transition-all text-[var(--color-aqua)] hidden md:flex items-center justify-center shrink-0"
-            title={isSidebarOpen ? "Unpin Sidebar" : "Pin Sidebar"}
-          >
-            {isSidebarOpen ? <Pin size={18} className="rotate-45" fill="currentColor" /> : <Pin size={18} />}
-          </button>
+          <div className="flex items-center gap-1 shrink-0 ml-auto md:ml-0">
+            <button 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-2 rounded-lg hover:bg-white/10 transition-all text-[var(--color-aqua)] flex items-center justify-center"
+              title={isSidebarOpen ? "Unpin Sidebar" : "Pin Sidebar"}
+            >
+              {isSidebarOpen ? <Pin size={18} className="rotate-45" fill="currentColor" /> : <Pin size={18} />}
+            </button>
+            <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-colors">
+               <ChevronLeft size={20} />
+            </button>
+          </div>
         )}
-
-        {/* Mobile Close Button */}
-        <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-2 text-white absolute right-4 top-1/2 -translate-y-1/2">
-           <ChevronLeft size={20} />
-        </button>
       </div>
       
       <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar">

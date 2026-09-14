@@ -1,7 +1,7 @@
 "use client";
 
 import { Bell, Search, ChevronDown, LogOut, Settings, User, Menu, Calendar } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useLanguage } from "@/lib/LanguageContext";
 import {
   DropdownMenu,
@@ -17,6 +17,7 @@ import { useState, useEffect } from "react";
 
 export function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const { 
     t, 
     selectedDate,
@@ -122,8 +123,8 @@ export function Navbar() {
   };
 
   return (
-    <header className="h-auto min-h-[4rem] py-3 md:py-0 md:h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex flex-wrap md:flex-nowrap items-center justify-between px-4 md:px-8 w-full sticky top-0 z-40 gap-4 md:gap-6 transition-colors">
-      <div className="flex items-center gap-4 w-auto shrink-0 justify-start order-1">
+    <header className="h-auto min-h-[4rem] py-3 md:py-0 md:h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex flex-wrap md:flex-nowrap items-center justify-between px-4 md:px-8 w-full sticky top-0 z-40 gap-3 md:gap-6 transition-colors">
+      <div className="flex items-center gap-4 w-auto shrink-0 justify-start order-1 md:order-1">
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setIsSidebarOpen(true)}
@@ -136,20 +137,22 @@ export function Navbar() {
       </div>
 
       {/* Centered Search Bar */}
-      <div className="relative w-full order-3 md:order-2 md:flex-1 max-w-md mx-auto flex justify-center mt-2 md:mt-0">
-         <div className="relative w-full">
-           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-           <input 
-             type="text" 
-             placeholder="Search invoices, customers, ledger records..."
-             className="pl-10 pr-4 py-2 w-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-full text-sm border border-transparent focus:bg-white focus:border-[var(--color-aqua)] focus:outline-none transition-all shadow-sm"
-           />
-         </div>
-      </div>
+      {!pathname?.startsWith('/settings') && (
+        <div className="relative w-full md:w-auto order-3 md:order-2 md:flex-1 max-w-md mx-auto flex justify-center mt-1 md:mt-0">
+           <div className="relative w-full">
+             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+             <input 
+               type="text" 
+               placeholder="Search invoices, customers, ledger records..."
+               className="pl-10 pr-4 py-2 w-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-full text-sm border border-transparent focus:bg-white focus:border-[var(--color-aqua)] focus:outline-none transition-all shadow-sm"
+             />
+           </div>
+        </div>
+      )}
 
-      <div className="flex items-center gap-3 md:gap-4 shrink-0 order-2 md:order-3">
-        {/* FROM - TO Date Range Picker Button */}
-        <div className="relative flex-1 md:flex-none flex justify-end">
+      {/* Date Picker Button */}
+      <div className={`relative w-full md:w-auto order-4 md:order-3 flex justify-end mt-1 md:mt-0 shrink-0 ${pathname?.startsWith('/settings') ? 'md:ml-auto' : ''}`}>
+        <div className="relative w-full md:w-auto flex justify-end">
           <button
             type="button"
             onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
@@ -223,7 +226,9 @@ export function Navbar() {
             </div>
           )}
         </div>
+      </div>
 
+      <div className="flex items-center gap-3 md:gap-4 shrink-0 order-2 md:order-4 ml-auto md:ml-0">
         {/* Notifications */}
         <DropdownMenu>
           <DropdownMenuTrigger className="relative text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 transition-colors focus:outline-none">

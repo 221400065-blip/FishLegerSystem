@@ -250,6 +250,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       if (storedDate) {
         setSelectedDate(storedDate);
       }
+      const storedCustFormat = localStorage.getItem("customerBillFormat");
+      if (storedCustFormat) {
+        setCustomerBillFormat(storedCustFormat as "thermal" | "simple");
+      }
+      const storedSuppFormat = localStorage.getItem("supplierBillFormat");
+      if (storedSuppFormat) {
+        setSupplierBillFormat(storedSuppFormat as "thermal" | "simple");
+      }
     } catch (e) {
       console.error("Failed to load customers from local storage", e);
     }
@@ -259,8 +267,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     if (isClient) {
       localStorage.setItem("customersData", JSON.stringify(customers));
       localStorage.setItem("selectedDate", selectedDate);
+      localStorage.setItem("customerBillFormat", customerBillFormat);
+      localStorage.setItem("supplierBillFormat", supplierBillFormat);
     }
-  }, [customers, selectedDate, isClient]);
+  }, [customers, selectedDate, customerBillFormat, supplierBillFormat, isClient]);
 
   const addCustomer = (customer: Customer) => {
     setCustomers(prev => [...prev, customer]);
