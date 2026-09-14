@@ -42,6 +42,7 @@ export default function POSPage() {
   const [deleteSessionId, setDeleteSessionId] = useState<string | null>(null);
   const [productSearchTerm, setProductSearchTerm] = useState("");
   const [customerDropdownOpen, setCustomerDropdownOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const commissionRate = 8; // Fixed strictly at 8%
   
   const activeCustomer = customers.find(c => c.id === activeCustomerId) || customers[0];
@@ -301,21 +302,33 @@ export default function POSPage() {
                   value={customerSearchTerm}
                   onChange={(e) => {
                     setCustomerSearchTerm(e.target.value);
+                    setHighlightedIndex(-1);
                     if (!customerDropdownOpen) setCustomerDropdownOpen(true);
                   }}
-                  onFocus={() => setCustomerDropdownOpen(true)}
+                  onFocus={() => {
+                    setCustomerDropdownOpen(true);
+                    setHighlightedIndex(-1);
+                  }}
                   onBlur={() => setTimeout(() => setCustomerDropdownOpen(false), 200)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    const matched = customers.filter(c => c.name.toLowerCase().includes(customerSearchTerm.toLowerCase()) || c.id.toLowerCase().includes(customerSearchTerm.toLowerCase()));
+                    if (e.key === 'ArrowDown') {
                       e.preventDefault();
-                      const matched = customers.filter(c => c.name.toLowerCase().includes(customerSearchTerm.toLowerCase()) || c.id.toLowerCase().includes(customerSearchTerm.toLowerCase()));
-                      if (matched.length > 0) {
-                        const first = matched[0];
-                        if (!selectedCustomerIds.includes(first.id)) {
-                          setSelectedCustomerIds(prev => [...prev, first.id]);
+                      if (!customerDropdownOpen) setCustomerDropdownOpen(true);
+                      setHighlightedIndex(prev => (prev < matched.length - 1 ? prev + 1 : prev));
+                    } else if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      setHighlightedIndex(prev => (prev > 0 ? prev - 1 : 0));
+                    } else if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (highlightedIndex >= 0 && matched[highlightedIndex]) {
+                        const selected = matched[highlightedIndex];
+                        if (!selectedCustomerIds.includes(selected.id)) {
+                          setSelectedCustomerIds(prev => [...prev, selected.id]);
                         }
                         setCustomerSearchTerm("");
                         setCustomerDropdownOpen(false);
+                        setHighlightedIndex(-1);
                       }
                     }
                   }}
@@ -330,14 +343,15 @@ export default function POSPage() {
               
               {customerDropdownOpen && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-50 p-2 max-h-64 overflow-y-auto custom-scrollbar">
-                  {customers.filter(c => c.name.toLowerCase().includes(customerSearchTerm.toLowerCase()) || c.id.toLowerCase().includes(customerSearchTerm.toLowerCase())).map(c => (
+                  {customers.filter(c => c.name.toLowerCase().includes(customerSearchTerm.toLowerCase()) || c.id.toLowerCase().includes(customerSearchTerm.toLowerCase())).map((c, index) => (
                     <div 
                       key={c.id} 
-                      className="flex items-center gap-3 p-2 hover:bg-[var(--color-aqua)]/5 rounded-md cursor-pointer transition-colors" 
+                      className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${index === highlightedIndex ? 'bg-[var(--color-aqua)]/10 border-l-2 border-[var(--color-aqua)]' : 'hover:bg-[var(--color-aqua)]/5 border-l-2 border-transparent'}`} 
                       onClick={() => {
                         if (!selectedCustomerIds.includes(c.id)) setSelectedCustomerIds(prev => [...prev, c.id]);
                         setCustomerSearchTerm("");
                         setCustomerDropdownOpen(false);
+                        setHighlightedIndex(-1);
                       }}
                     >
                       <div className="flex flex-col">
@@ -419,9 +433,6 @@ export default function POSPage() {
                       {p.discount && <Badge variant="secondary" className="bg-orange-100 text-orange-700 text-[9px] px-1 py-0 h-4">{p.discount}</Badge>}
                     </div>
                   </div>
-                  <Button onClick={(e) => { e.stopPropagation(); handleAddToCart(p); }} size="icon" className="h-8 w-8 rounded-full bg-slate-100 text-[var(--color-ocean-blue)] hover:bg-[var(--color-aqua)] hover:text-white transition-colors shrink-0">
-                    <Plus size={16} />
-                  </Button>
                 </div>
               ))}
             </div>
@@ -635,10 +646,30 @@ export default function POSPage() {
           </div>
 
           <div className="mt-auto pt-4 shrink-0 w-full max-w-full">
-            <Button onClick={() => setPayAllModal(true)} className="w-full mx-auto h-12 md:h-14 bg-orange-600 hover:bg-orange-700 text-white font-bold text-base md:text-lg shadow-sm rounded-xl transition-all relative overflow-hidden group">
-              <span className="relative z-10">Save Sales</span>
-              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
-            </Button>
+            <div className="bg-[var(--color-ocean-blue)] rounded-xl p-5 text-white shadow-lg flex flex-col gap-4">
+              <h3 className="text-xs text-slate-300 tracking-wider font-medium uppercase">GRAND SUMMARY</h3>
+              <div className="space-y-3 pb-4 border-b border-white/10 text-sm">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-300">Total Items</span>
+                  <span className="font-bold text-white">{totalItems}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-300">Combined Subtotal</span>
+                  <span className="font-bold text-white">RS {combinedSubtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-300">Commission ({commissionRate}%)</span>
+                  <span className="font-bold text-white">RS {totalCommission.toFixed(2)}</span>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-slate-400">Grand Total</span>
+                <span className="text-2xl md:text-3xl font-bold text-[var(--color-aqua)]">RS {grandTotal.toFixed(2)}</span>
+              </div>
+              <Button onClick={() => setPayAllModal(true)} className="w-full mt-2 h-12 md:h-14 bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-base shadow-sm rounded-xl transition-all">
+                Save Invoice
+              </Button>
+            </div>
           </div>
         </div>
       </div>
