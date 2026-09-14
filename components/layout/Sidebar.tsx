@@ -31,14 +31,23 @@ export function Sidebar() {
 
   useEffect(() => {
     setOpenMenus({
-      suppliers: pathname.includes('/suppliers') || pathname.includes('/purchase-bills') || pathname.includes('/expenses')
+      suppliers: pathname.includes('/suppliers') || pathname.includes('/purchase-bills') || pathname.includes('/expenses'),
+      billing: pathname.includes('/billing')
     });
   }, [pathname]);
 
   const navItems = [
     { id: "dashboard", href: "/dashboard", icon: LayoutDashboard },
     { id: "posTerminal", href: "/pos", icon: MonitorSmartphone },
-    { id: "billing", href: "/billing", icon: FileText },
+    { 
+      id: "billing", 
+      href: "/billing", 
+      icon: FileText,
+      children: [
+        { id: "customerBilling", href: "/billing/customers", icon: Users },
+        { id: "supplierBilling", href: "/billing/suppliers", icon: Truck },
+      ]
+    },
     { id: "customers", href: "/customers", icon: Users },
     { id: "inventory", href: "/inventory", icon: Package },
     { 
@@ -117,8 +126,9 @@ export function Sidebar() {
                     : "text-slate-400 hover:bg-white/10 hover:text-white"
                 }`}
                 title={!expanded ? t(item.id as any) : ""}
-                onClick={() => {
+                onClick={(e) => {
                   if (hasChildren) {
+                    e.preventDefault();
                     if (!expanded) {
                       setIsSidebarOpen(true);
                       setOpenMenus(prev => ({ ...prev, [item.id]: true }));

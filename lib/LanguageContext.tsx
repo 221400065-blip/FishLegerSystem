@@ -24,6 +24,8 @@ const en: Translations = {
   dashboard: "Dashboard",
   posTerminal: "Ledger System",
   billing: "Today's Billing",
+  customerBilling: "Customer Billing",
+  supplierBilling: "Supplier Billing",
   customers: "Customers",
   inventory: "Inventory",
   suppliers: "Suppliers",
@@ -104,6 +106,8 @@ const ur: Translations = {
   dashboard: "ڈیش بورڈ",
   posTerminal: "لیجر سسٹم",
   billing: "آج کی بلنگ",
+  customerBilling: "گاہک کی بلنگ",
+  supplierBilling: "سپلائر کی بلنگ",
   customers: "گاہک",
   inventory: "اسٹاک",
   suppliers: "سپلائرز",
@@ -184,6 +188,40 @@ const translations = {
   ur,
 };
 
+export interface InventoryItem {
+  id: string;
+  image: string;
+  title: string;
+  category: string;
+  sku: string;
+  stock: number;
+  unitPrice: number;
+  sellingPrice: number;
+}
+
+export interface SupplierPurchase {
+  id: string;
+  date: string;
+  items: number;
+  totalAmount: number;
+  paidAmount: number;
+  status: "Pending" | "Paid" | "Unpaid" | "Partial";
+  products: any[];
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  phone?: string;
+  address?: string;
+  totalPurchases: number;
+  paid: number;
+  payable: number;
+  status: string;
+  ledger?: LedgerEntry[];
+  purchases?: SupplierPurchase[];
+}
+
 export interface Invoice {
   id: string; // e.g. INV-1001
   date: string;
@@ -197,7 +235,7 @@ export interface LedgerEntry {
   id: string;
   date: string;
   refNo: string;
-  type: "Sale Invoice" | "Payment Recv" | "Expense Entry";
+  type: "Sale Invoice" | "Payment Recv" | "Expense Entry" | "Purchase PO" | "Payment Sent";
   description: string;
   debit: number;
   credit: number;
@@ -209,12 +247,18 @@ export type Customer = {
   id: string; 
   name: string; 
   phone?: string; 
+  whatsapp?: string;
   email?: string; 
   address?: string; 
   billed?: number; 
   paid?: number; 
   status?: string; 
   creditLimit?: number; 
+  creditPeriod?: string;
+  cnic?: string;
+  businessName?: string;
+  notes?: string;
+  openingBalanceType?: "Debit" | "Credit";
   invoices?: Invoice[]; 
   ledger?: LedgerEntry[]; 
   createdAt?: string; 
@@ -245,8 +289,29 @@ interface LanguageContextType {
   updateCustomer: (customer: Customer) => void;
   deleteCustomer: (id: string) => void;
   addInvoice: (customerId: string, invoice: Invoice) => void;
-  receivePayment: (customerId: string, amount: number, selectedInvoiceIds: string[]) => void;
+  receivePayment: (customerId: string, amount: number) => void;
   addExpense: (customerId: string, amount: number, description: string) => void;
+  
+  suppliers: Supplier[];
+  addSupplier: (supplier: Supplier) => void;
+  updateSupplier: (supplier: Supplier) => void;
+  deleteSupplier: (id: string) => void;
+  addSupplierPurchase: (supplierId: string, purchase: SupplierPurchase) => void;
+  receiveSupplierPayment: (supplierId: string, amount: number) => void;
+  addSupplierExpense: (supplierId: string, amount: number, description: string) => void;
+
+  inventory: InventoryItem[];
+  addInventoryItem: (item: InventoryItem) => void;
+  updateInventoryItem: (item: InventoryItem) => void;
+  deleteInventoryItem: (id: string) => void;
+  updateProductStock: (productId: string, qty: number) => void;
+
+  carts: Record<string, any[]>;
+  setCarts: React.Dispatch<React.SetStateAction<Record<string, any[]>>>;
+  selectedCustomerIds: string[];
+  setSelectedCustomerIds: React.Dispatch<React.SetStateAction<string[]>>;
+  activeCustomerId: string;
+  setActiveCustomerId: (id: string) => void;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -259,6 +324,15 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [theme, setThemeState] = useState<"light" | "dark">("light");
+
+  const [carts, setCarts] = useState<Record<string, any[]>>({
+    "C-001": [],
+    "C-002": [
+      { id: "P-103", name: "USB-C Hub Multi", price: 65.00, qty: 1, total: 65.00 },
+    ],
+  });
+  const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>(["C-001"]);
+  const [activeCustomerId, setActiveCustomerId] = useState<string>("C-001");
 
   const [notifications, setNotifications] = useState<Notification[]>([
     { id: "1", title: "Low Stock Alert", description: "5 products are running low on stock.", type: "inventory", isRead: false, date: "10 mins ago" },
@@ -276,6 +350,21 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     { id: "C-006", name: "Nadia Shah", phone: "+92 311 9988776", billed: 620.00, paid: 500.00, status: "Inactive" },
   ]);
 
+  const [suppliers, setSuppliers] = useState<Supplier[]>([
+    { id: "S-001", name: "Samsung Electronics Ltd", phone: "+92 300 1112222", totalPurchases: 14250, paid: 14250, payable: 0, status: "Active" },
+    { id: "S-002", name: "Apple Distribution Inc", phone: "+92 300 3334444", totalPurchases: 38000, paid: 15000, payable: 23000, status: "Active" }
+  ]);
+
+  const [inventory, setInventory] = useState<InventoryItem[]>([
+    { id: "P-101", image: "https://placehold.co/80x80/06B6D4/FFFFFF?text=65W", title: "Samsung 65W Charger", category: "Chargers", sku: "CHG-S65W", stock: 45, unitPrice: 25.00, sellingPrice: 45.00 },
+    { id: "P-102", image: "https://placehold.co/80x80/f97316/FFFFFF?text=2M", title: "iPhone Cable 2M", category: "Cables", sku: "CBL-IP2M", stock: 8, unitPrice: 10.00, sellingPrice: 25.00 },
+    { id: "P-103", image: "https://placehold.co/80x80/0B2545/FFFFFF?text=Hub", title: "USB-C Hub Multi", category: "Accessories", sku: "ACC-HUB", stock: 24, unitPrice: 35.00, sellingPrice: 65.00 },
+    { id: "P-104", image: "https://placehold.co/80x80/06B6D4/FFFFFF?text=20W", title: "Fast Charger 20W", category: "Chargers", sku: "CHG-F20W", stock: 12, unitPrice: 8.00, sellingPrice: 18.00 },
+    { id: "P-105", image: "https://placehold.co/80x80/cbd5e1/FFFFFF?text=Stnd", title: "Phone Stand Adjustable", category: "Accessories", sku: "ACC-STND", stock: 0, unitPrice: 5.00, sellingPrice: 15.00 },
+    { id: "P-106", image: "https://placehold.co/80x80/0B2545/FFFFFF?text=Case", title: "Silicone Case Pro", category: "Accessories", sku: "ACC-CASE", stock: 50, unitPrice: 3.00, sellingPrice: 12.00 },
+    { id: "P-107", image: "https://placehold.co/80x80/f97316/FFFFFF?text=CtoC", title: "Type-C to Type-C 1M", category: "Cables", sku: "CBL-CTC1", stock: 14, unitPrice: 6.00, sellingPrice: 15.00 },
+  ]);
+
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -285,9 +374,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       if (stored) {
         setCustomers(JSON.parse(stored));
       }
-      const storedDate = localStorage.getItem("selectedDate");
-      if (storedDate) {
-        setSelectedDate(storedDate);
+      const storedSuppliers = localStorage.getItem("suppliersData");
+      if (storedSuppliers) {
+        setSuppliers(JSON.parse(storedSuppliers));
+      }
+      const storedInventory = localStorage.getItem("inventoryData");
+      if (storedInventory) {
+        setInventory(JSON.parse(storedInventory));
       }
       const storedCustFormat = localStorage.getItem("customerBillFormat");
       if (storedCustFormat) {
@@ -298,18 +391,19 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         setSupplierBillFormat(storedSuppFormat as "thermal" | "simple");
       }
     } catch (e) {
-      console.error("Failed to load customers from local storage", e);
+      console.error("Failed to load data from local storage", e);
     }
   }, []);
 
   useEffect(() => {
     if (isClient) {
       localStorage.setItem("customersData", JSON.stringify(customers));
-      localStorage.setItem("selectedDate", selectedDate);
+      localStorage.setItem("suppliersData", JSON.stringify(suppliers));
+      localStorage.setItem("inventoryData", JSON.stringify(inventory));
       localStorage.setItem("customerBillFormat", customerBillFormat);
       localStorage.setItem("supplierBillFormat", supplierBillFormat);
     }
-  }, [customers, selectedDate, customerBillFormat, supplierBillFormat, isClient]);
+  }, [customers, suppliers, inventory, customerBillFormat, supplierBillFormat, isClient]);
 
   const addCustomer = (customer: Customer) => {
     setCustomers(prev => [...prev, customer]);
@@ -331,12 +425,17 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         const currentBalance = currentBilled - currentPaid;
         const newBalance = currentBalance + invoice.totalAmount;
         
+        // Build description string from items e.g., "2x Samsung 65W, 1x iPhone Cable"
+        const itemsDescription = invoice.items.length > 0
+          ? invoice.items.map(item => `${item.qty}x ${item.name}`).join(", ")
+          : "Products Purchased";
+
         const newLedgerEntry: LedgerEntry = {
           id: `L-${Date.now()}-${Math.floor(Math.random()*1000)}`,
           date: invoice.date || new Date().toISOString(),
           refNo: invoice.id,
           type: "Sale Invoice",
-          description: "Products Purchased",
+          description: itemsDescription,
           debit: invoice.totalAmount,
           credit: 0,
           expense: 0,
@@ -354,7 +453,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }));
   };
 
-  const receivePayment = (customerId: string, amount: number, selectedInvoiceIds: string[]) => {
+  const receivePayment = (customerId: string, amount: number) => {
     setCustomers(prev => prev.map(c => {
       if (c.id === customerId) {
         const currentBilled = c.billed || 0;
@@ -376,7 +475,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
         let remainingAmount = amount;
         const updatedInvoices = (c.invoices || []).map(inv => {
-          if (selectedInvoiceIds.includes(inv.id) && remainingAmount > 0) {
+          if (remainingAmount > 0 && inv.status !== "Paid") {
             const pendingForInvoice = inv.totalAmount - inv.paidAmount;
             if (pendingForInvoice > 0) {
               const amountToApply = Math.min(pendingForInvoice, remainingAmount);
@@ -401,6 +500,150 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       }
       return c;
     }));
+  };
+
+  const addSupplier = (supplier: Supplier) => {
+    setSuppliers(prev => [...prev, supplier]);
+  };
+
+  const updateSupplier = (supplier: Supplier) => {
+    setSuppliers(prev => prev.map(s => s.id === supplier.id ? { ...s, ...supplier } : s));
+  };
+
+  const deleteSupplier = (id: string) => {
+    setSuppliers(prev => prev.filter(s => s.id !== id));
+  };
+
+  const addSupplierPurchase = (supplierId: string, purchase: SupplierPurchase) => {
+    setSuppliers(prev => prev.map(s => {
+      if (s.id === supplierId) {
+        const currentTotal = s.totalPurchases || 0;
+        const currentPaid = s.paid || 0;
+        const currentBalance = s.payable || (currentTotal - currentPaid);
+        const newBalance = currentBalance + purchase.totalAmount;
+
+        const itemsDescription = purchase.products.length > 0
+          ? purchase.products.map(item => `${item.qty}x ${item.name}`).join(", ")
+          : "Products Restocked";
+
+        const newLedgerEntry: LedgerEntry = {
+          id: `L-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+          date: purchase.date || new Date().toISOString(),
+          refNo: purchase.id,
+          type: "Purchase PO",
+          description: itemsDescription,
+          debit: 0,
+          credit: purchase.totalAmount, // Purchase adds to credit (what we owe)
+          expense: 0,
+          balance: newBalance
+        };
+
+        return {
+          ...s,
+          totalPurchases: currentTotal + purchase.totalAmount,
+          payable: newBalance,
+          purchases: [...(s.purchases || []), purchase],
+          ledger: [...(s.ledger || []), newLedgerEntry]
+        };
+      }
+      return s;
+    }));
+  };
+
+  const receiveSupplierPayment = (supplierId: string, amount: number) => {
+    setSuppliers(prev => prev.map(s => {
+      if (s.id === supplierId) {
+        const currentTotal = s.totalPurchases || 0;
+        const currentPaid = s.paid || 0;
+        const currentBalance = s.payable || (currentTotal - currentPaid);
+        const newBalance = currentBalance - amount;
+
+        const newLedgerEntry: LedgerEntry = {
+          id: `L-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+          date: new Date().toISOString(),
+          refNo: `PAY-${Date.now().toString().slice(-4)}`,
+          type: "Payment Sent",
+          description: "Payment to Supplier",
+          debit: amount,
+          credit: 0,
+          expense: 0,
+          balance: newBalance
+        };
+
+        let remainingAmount = amount;
+        const updatedPurchases = (s.purchases || []).map(p => {
+          if (remainingAmount > 0 && p.status !== "Paid") {
+            const pendingForPurchase = p.totalAmount - p.paidAmount;
+            if (pendingForPurchase > 0) {
+              const amountToApply = Math.min(pendingForPurchase, remainingAmount);
+              remainingAmount -= amountToApply;
+              const newPaid = p.paidAmount + amountToApply;
+              return {
+                ...p,
+                paidAmount: newPaid,
+                status: (newPaid >= p.totalAmount ? "Paid" : "Partial") as "Paid" | "Partial" | "Unpaid"
+              };
+            }
+          }
+          return p;
+        });
+
+        return {
+          ...s,
+          paid: currentPaid + amount,
+          payable: newBalance,
+          purchases: updatedPurchases,
+          ledger: [...(s.ledger || []), newLedgerEntry]
+        };
+      }
+      return s;
+    }));
+  };
+
+  const addSupplierExpense = (supplierId: string, amount: number, description: string) => {
+    setSuppliers(prev => prev.map(s => {
+      if (s.id === supplierId) {
+        const currentTotal = s.totalPurchases || 0;
+        const currentPaid = s.paid || 0;
+        const currentBalance = s.payable || (currentTotal - currentPaid);
+        const newBalance = currentBalance + amount;
+
+        const newLedgerEntry: LedgerEntry = {
+          id: `L-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+          date: new Date().toISOString(),
+          refNo: `EXP-${Date.now().toString().slice(-4)}`,
+          type: "Expense Entry",
+          description: description,
+          debit: 0,
+          credit: 0,
+          expense: amount,
+          balance: newBalance
+        };
+
+        return {
+          ...s,
+          payable: newBalance,
+          ledger: [...(s.ledger || []), newLedgerEntry]
+        };
+      }
+      return s;
+    }));
+  };
+
+  const addInventoryItem = (item: InventoryItem) => {
+    setInventory(prev => [item, ...prev]);
+  };
+
+  const updateInventoryItem = (item: InventoryItem) => {
+    setInventory(prev => prev.map(i => i.id === item.id ? { ...i, ...item } : i));
+  };
+
+  const deleteInventoryItem = (id: string) => {
+    setInventory(prev => prev.filter(i => i.id !== id));
+  };
+
+  const updateProductStock = (productId: string, qtyToAdd: number) => {
+    setInventory(prev => prev.map(i => i.id === productId ? { ...i, stock: i.stock + qtyToAdd } : i));
   };
 
   const addExpense = (customerId: string, amount: number, description: string) => {
@@ -479,7 +722,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       isSidebarHovered, setIsSidebarHovered,
       theme, setTheme,
       notifications, markNotificationAsRead, deleteNotification, clearAllNotifications,
-      customers, addCustomer, updateCustomer, deleteCustomer, addInvoice, receivePayment, addExpense
+      customers, addCustomer, updateCustomer, deleteCustomer, addInvoice, receivePayment, addExpense,
+      suppliers, addSupplier, updateSupplier, deleteSupplier, addSupplierPurchase,
+      receiveSupplierPayment,
+      addSupplierExpense,
+      inventory, addInventoryItem, updateInventoryItem, deleteInventoryItem, updateProductStock,
+      carts, setCarts,
+      selectedCustomerIds, setSelectedCustomerIds,
+      activeCustomerId, setActiveCustomerId
     }}>
       <div dir={language === 'ur' ? 'rtl' : 'ltr'}>
         {children}

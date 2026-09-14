@@ -116,6 +116,8 @@ export function Navbar() {
   const getPageTitle = () => {
     if (pathname.includes('/customers/') && pathname.split('/').length > 2) return "Customer Ledger";
     if (pathname.includes('/customers')) return "Customer Directory";
+    if (pathname.includes('/billing/suppliers')) return "Supplier Billing";
+    if (pathname.includes('/billing/customers')) return "Customer Billing";
     if (pathname.includes('/billing')) return "Today's Billing";
     if (pathname.includes('/pos')) return "Sales Terminal";
     if (pathname.includes('/inventory')) return "Inventory";

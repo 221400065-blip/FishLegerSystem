@@ -27,7 +27,17 @@ export default function CustomersPage() {
   
   // Form and selected item state
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
-  const [formData, setFormData] = useState({ name: "", phone: "", email: "", address: "", openingBalance: "", status: "Active" });
+  const [formData, setFormData] = useState({ 
+    name: "", phone: "", whatsapp: "", address: "", openingBalance: "", status: "Active",
+    cnic: "", businessName: "", openingBalanceType: "To Receive", creditLimit: "", creditPeriod: "", notes: ""
+  });
+
+  const resetForm = () => {
+    setFormData({ 
+      name: "", phone: "", whatsapp: "", address: "", openingBalance: "", status: "Active",
+      cnic: "", businessName: "", openingBalanceType: "To Receive", creditLimit: "", creditPeriod: "", notes: ""
+    });
+  };
 
   const filteredCustomers = customers.filter(customer => {
     const matchesTab = activeTab === "All" || customer.status === activeTab;
@@ -48,20 +58,38 @@ export default function CustomersPage() {
       id: `C-00${customers.length + 1}`,
       name: formData.name,
       phone: formData.phone,
-      email: formData.email,
+      whatsapp: formData.whatsapp,
       address: formData.address,
-      billed: formData.openingBalance ? parseFloat(formData.openingBalance) : 0,
-      paid: 0,
+      cnic: formData.cnic,
+      businessName: formData.businessName,
+      creditLimit: formData.creditLimit ? parseFloat(formData.creditLimit) : undefined,
+      creditPeriod: formData.creditPeriod,
+      notes: formData.notes,
+      openingBalanceType: (formData.openingBalanceType === "To Receive" ? "Debit" : "Credit") as "Debit" | "Credit",
+      billed: formData.openingBalance && formData.openingBalanceType === "To Receive" ? parseFloat(formData.openingBalance) : 0,
+      paid: formData.openingBalance && formData.openingBalanceType === "To Pay" ? parseFloat(formData.openingBalance) : 0,
       status: formData.status
     };
     addCustomer(newCustomer);
     setAddCustomerModal(false);
-    setFormData({ name: "", phone: "", email: "", address: "", openingBalance: "", status: "Active" });
+    resetForm();
   };
 
   const handleEditSubmit = () => {
     if (selectedCustomer) {
-      updateCustomer({ ...selectedCustomer, name: formData.name, phone: formData.phone, email: formData.email, address: formData.address, status: formData.status });
+      updateCustomer({ 
+        ...selectedCustomer, 
+        name: formData.name, 
+        phone: formData.phone, 
+        whatsapp: formData.whatsapp, 
+        address: formData.address, 
+        status: formData.status,
+        cnic: formData.cnic,
+        businessName: formData.businessName,
+        creditLimit: formData.creditLimit ? parseFloat(formData.creditLimit) : undefined,
+        creditPeriod: formData.creditPeriod,
+        notes: formData.notes
+      });
     }
     setEditCustomerModal(false);
   };
@@ -75,7 +103,20 @@ export default function CustomersPage() {
 
   const openEdit = (c: any) => {
     setSelectedCustomer(c);
-    setFormData({ name: c.name || "", phone: c.phone || "", email: c.email || "", address: c.address || "", openingBalance: "", status: c.status || "Active" });
+    setFormData({ 
+      name: c.name || "", 
+      phone: c.phone || "", 
+      whatsapp: c.whatsapp || "", 
+      address: c.address || "", 
+      openingBalance: "", 
+      status: c.status || "Active",
+      cnic: c.cnic || "",
+      businessName: c.businessName || "",
+      openingBalanceType: c.openingBalanceType === "Credit" ? "To Pay" : "To Receive",
+      creditLimit: c.creditLimit ? c.creditLimit.toString() : "",
+      creditPeriod: c.creditPeriod || "",
+      notes: c.notes || ""
+    });
     setEditCustomerModal(true);
   };
 
@@ -103,7 +144,7 @@ export default function CustomersPage() {
           </Badge>
           <Button 
             onClick={() => {
-              setFormData({ name: "", phone: "", email: "", address: "", openingBalance: "", status: "Active" });
+              resetForm();
               setAddCustomerModal(true);
             }} 
             className="bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90 text-white font-semibold"
@@ -318,34 +359,89 @@ export default function CustomersPage() {
               Enter the customer details below.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Customer Name</label>
-              <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="e.g. John Doe" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Phone Number</label>
-              <Input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="e.g. +92 300 1234567" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Email Address</label>
-              <Input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="e.g. johndoe@example.com" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Complete Address</label>
-              <Input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} placeholder="e.g. 123 Main Street, City" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Opening Balance (RS)</label>
-              <Input type="number" value={formData.openingBalance} onChange={e => setFormData({...formData, openingBalance: e.target.value})} placeholder="e.g. 5000" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Status</label>
-              <div className="flex gap-2">
-                <Button onClick={() => setFormData({...formData, status: "Active"})} variant={formData.status === "Active" ? "default" : "outline"} className={formData.status === "Active" ? "bg-green-600 hover:bg-green-700" : ""}>Active</Button>
-                <Button onClick={() => setFormData({...formData, status: "Inactive"})} variant={formData.status === "Inactive" ? "default" : "outline"} className={formData.status === "Inactive" ? "bg-slate-600 hover:bg-slate-700" : ""}>Inactive</Button>
+          <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto px-2">
+            
+            {/* Basic Info */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-slate-700 text-sm border-b pb-1">Basic Info</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Full Name *</label>
+                  <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Required" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Primary Phone *</label>
+                  <Input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="Required" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">WhatsApp / Secondary</label>
+                  <Input value={formData.whatsapp} onChange={e => setFormData({...formData, whatsapp: e.target.value})} placeholder="Optional" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">CNIC Number</label>
+                  <Input value={formData.cnic} onChange={e => setFormData({...formData, cnic: e.target.value})} placeholder="Optional" />
+                </div>
               </div>
             </div>
+
+            {/* Address */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-slate-700 text-sm border-b pb-1">Address Details</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Business / Shop Name</label>
+                  <Input value={formData.businessName} onChange={e => setFormData({...formData, businessName: e.target.value})} placeholder="e.g. Al-Falah Traders" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Complete Address</label>
+                  <Input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} placeholder="e.g. 123 Main Street" />
+                </div>
+              </div>
+            </div>
+
+            {/* Ledger & Credit Controls */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-slate-700 text-sm border-b pb-1">Ledger & Credit Controls</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Opening Balance</label>
+                  <Input type="number" value={formData.openingBalance} onChange={e => setFormData({...formData, openingBalance: e.target.value})} placeholder="e.g. 0" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Balance Type</label>
+                  <div className="flex gap-2">
+                    <Button onClick={() => setFormData({...formData, openingBalanceType: "To Receive"})} variant={formData.openingBalanceType === "To Receive" ? "default" : "outline"} className={`flex-1 ${formData.openingBalanceType === "To Receive" ? "bg-orange-500 hover:bg-orange-600" : ""}`}>To Receive (Debit)</Button>
+                    <Button onClick={() => setFormData({...formData, openingBalanceType: "To Pay"})} variant={formData.openingBalanceType === "To Pay" ? "default" : "outline"} className={`flex-1 ${formData.openingBalanceType === "To Pay" ? "bg-green-600 hover:bg-green-700" : ""}`}>To Pay (Credit)</Button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Credit Limit (RS)</label>
+                  <Input type="number" value={formData.creditLimit} onChange={e => setFormData({...formData, creditLimit: e.target.value})} placeholder="e.g. 50000" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Credit Period</label>
+                  <Input value={formData.creditPeriod} onChange={e => setFormData({...formData, creditPeriod: e.target.value})} placeholder="e.g. 15 Days" />
+                </div>
+              </div>
+            </div>
+
+            {/* Status & Notes */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-slate-700 text-sm border-b pb-1">Status & Notes</h3>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Status</label>
+                <div className="flex gap-2">
+                  <Button onClick={() => setFormData({...formData, status: "Active"})} variant={formData.status === "Active" ? "default" : "outline"} className={formData.status === "Active" ? "bg-green-600 hover:bg-green-700" : ""}>Active</Button>
+                  <Button onClick={() => setFormData({...formData, status: "Inactive"})} variant={formData.status === "Inactive" ? "default" : "outline"} className={formData.status === "Inactive" ? "bg-slate-600 hover:bg-slate-700" : ""}>Inactive</Button>
+                  <Button onClick={() => setFormData({...formData, status: "Blacklisted"})} variant={formData.status === "Blacklisted" ? "default" : "outline"} className={formData.status === "Blacklisted" ? "bg-red-600 hover:bg-red-700" : ""}>Blacklisted</Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Internal Notes</label>
+                <Input value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} placeholder="Any additional details..." />
+              </div>
+            </div>
+
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddCustomerModal(false)}>Cancel</Button>
@@ -363,30 +459,78 @@ export default function CustomersPage() {
               Update the details for {selectedCustomer?.name}.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Customer Name</label>
-              <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Phone Number</label>
-              <Input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Email Address</label>
-              <Input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Complete Address</label>
-              <Input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Status</label>
-              <div className="flex gap-2">
-                <Button onClick={() => setFormData({...formData, status: "Active"})} variant={formData.status === "Active" ? "default" : "outline"} className={formData.status === "Active" ? "bg-green-600 hover:bg-green-700 text-white" : ""}>Active</Button>
-                <Button onClick={() => setFormData({...formData, status: "Inactive"})} variant={formData.status === "Inactive" ? "default" : "outline"} className={formData.status === "Inactive" ? "bg-slate-600 hover:bg-slate-700 text-white" : ""}>Inactive</Button>
+          <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto px-2">
+            
+            {/* Basic Info */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-slate-700 text-sm border-b pb-1">Basic Info</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Full Name *</label>
+                  <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Primary Phone *</label>
+                  <Input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">WhatsApp / Secondary</label>
+                  <Input value={formData.whatsapp} onChange={e => setFormData({...formData, whatsapp: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">CNIC Number</label>
+                  <Input value={formData.cnic} onChange={e => setFormData({...formData, cnic: e.target.value})} />
+                </div>
               </div>
             </div>
+
+            {/* Address */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-slate-700 text-sm border-b pb-1">Address Details</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Business / Shop Name</label>
+                  <Input value={formData.businessName} onChange={e => setFormData({...formData, businessName: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Complete Address</label>
+                  <Input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
+                </div>
+              </div>
+            </div>
+
+            {/* Credit Controls (Edit Mode limits changes to opening balance, only showing limits) */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-slate-700 text-sm border-b pb-1">Credit Controls</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Credit Limit (RS)</label>
+                  <Input type="number" value={formData.creditLimit} onChange={e => setFormData({...formData, creditLimit: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Credit Period</label>
+                  <Input value={formData.creditPeriod} onChange={e => setFormData({...formData, creditPeriod: e.target.value})} />
+                </div>
+              </div>
+            </div>
+
+            {/* Status & Notes */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-slate-700 text-sm border-b pb-1">Status & Notes</h3>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Status</label>
+                <div className="flex gap-2">
+                  <Button onClick={() => setFormData({...formData, status: "Active"})} variant={formData.status === "Active" ? "default" : "outline"} className={formData.status === "Active" ? "bg-green-600 hover:bg-green-700 text-white" : ""}>Active</Button>
+                  <Button onClick={() => setFormData({...formData, status: "Inactive"})} variant={formData.status === "Inactive" ? "default" : "outline"} className={formData.status === "Inactive" ? "bg-slate-600 hover:bg-slate-700 text-white" : ""}>Inactive</Button>
+                  <Button onClick={() => setFormData({...formData, status: "Blacklisted"})} variant={formData.status === "Blacklisted" ? "default" : "outline"} className={formData.status === "Blacklisted" ? "bg-red-600 hover:bg-red-700 text-white" : ""}>Blacklisted</Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Internal Notes</label>
+                <Input value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} />
+              </div>
+            </div>
+
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditCustomerModal(false)}>Cancel</Button>

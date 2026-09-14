@@ -27,7 +27,10 @@ const products = [
 ];
 
 export default function POSPage() {
-  const { t, customerBillFormat, customers, addCustomer, addInvoice } = useLanguage();
+  const { 
+    t, language, setLanguage, isSidebarOpen, customers, inventory, addInvoice, addCustomer, updateProductStock, setCustomerBillFormat, customerBillFormat,
+    carts, setCarts, selectedCustomerIds, setSelectedCustomerIds, activeCustomerId, setActiveCustomerId
+  } = useLanguage();
   const router = useRouter();
   const [completeSaleModal, setCompleteSaleModal] = useState(false);
   const [payAllModal, setPayAllModal] = useState(false);
@@ -39,22 +42,8 @@ export default function POSPage() {
   const [deleteSessionId, setDeleteSessionId] = useState<string | null>(null);
   const [productSearchTerm, setProductSearchTerm] = useState("");
   const [customerDropdownOpen, setCustomerDropdownOpen] = useState(false);
-  const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>(["C-001"]);
   const commissionRate = 8; // Fixed strictly at 8%
-
-  const [activeCustomerId, setActiveCustomerId] = useState("C-001");
-  const [carts, setCarts] = useState<Record<string, any[]>>({
-    "C-001": [
-      { id: "P-101", name: "Samsung 65W Charger", price: 45.00, qty: 2, total: 90.00 },
-      { id: "P-102", name: "iPhone Cable 2M", price: 25.00, qty: 1, total: 25.00 },
-      { id: "P-104", name: "Fast Charger 20W", price: 18.00, qty: 2, total: 36.00 },
-    ],
-    "C-002": [
-      { id: "P-103", name: "USB-C Hub Multi", price: 65.00, qty: 1, total: 65.00 },
-    ],
-    "C-003": []
-  });
-
+  
   const activeCustomer = customers.find(c => c.id === activeCustomerId) || customers[0];
   const activeCart = carts[activeCustomerId] || [];
 
@@ -303,76 +292,63 @@ export default function POSPage() {
                 <Plus size={14} className="mr-1" /> {t("add")} Customer
               </Button>
             </div>
-            <div className="relative mb-3 w-full">
-              <button 
-                onClick={() => setCustomerDropdownOpen(!customerDropdownOpen)} 
-                className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm bg-slate-50 flex items-center justify-between focus:outline-none focus:border-[var(--color-aqua)] hover:bg-slate-100 transition-colors"
-              >
-                <span className="font-medium text-slate-700">
-                  {selectedCustomerIds.length > 0 ? `Selected Customers (${selectedCustomerIds.length})` : "Filter Customers"}
-                </span>
-                <ChevronDown size={14} className="text-slate-500" />
-              </button>
+            <div className="relative mb-3 w-full group">
+              <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                <Input 
+                  placeholder="Search customer by name or ID..." 
+                  className="w-full h-11 pl-10 pr-10 bg-slate-50 border-slate-200 focus:border-[var(--color-aqua)]" 
+                  value={customerSearchTerm}
+                  onChange={(e) => {
+                    setCustomerSearchTerm(e.target.value);
+                    if (!customerDropdownOpen) setCustomerDropdownOpen(true);
+                  }}
+                  onFocus={() => setCustomerDropdownOpen(true)}
+                  onBlur={() => setTimeout(() => setCustomerDropdownOpen(false), 200)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const matched = customers.filter(c => c.name.toLowerCase().includes(customerSearchTerm.toLowerCase()) || c.id.toLowerCase().includes(customerSearchTerm.toLowerCase()));
+                      if (matched.length > 0) {
+                        const first = matched[0];
+                        if (!selectedCustomerIds.includes(first.id)) {
+                          setSelectedCustomerIds(prev => [...prev, first.id]);
+                        }
+                        setCustomerSearchTerm("");
+                        setCustomerDropdownOpen(false);
+                      }
+                    }
+                  }}
+                />
+                <button 
+                  onClick={() => setCustomerDropdownOpen(!customerDropdownOpen)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                >
+                  <ChevronDown size={16} />
+                </button>
+              </div>
               
               {customerDropdownOpen && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-50 p-2 max-h-64 overflow-y-auto custom-scrollbar">
-                  <div className="relative mb-2">
-                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                     <Input 
-                       placeholder="Search customer..." 
-                       className="w-full h-8 pl-8 text-xs bg-slate-50" 
-                       value={customerSearchTerm}
-                       onChange={(e) => setCustomerSearchTerm(e.target.value)}
-                       onKeyDown={(e) => {
-                         if (e.key === 'Enter') setCustomerDropdownOpen(false);
-                       }}
-                     />
-                  </div>
-                  <div 
-                    className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded-md cursor-pointer border-b border-slate-100 mb-1" 
-                    onClick={() => {
-                      if (selectedCustomerIds.length === customers.length) {
-                        setSelectedCustomerIds([]);
-                      } else {
-                        setSelectedCustomerIds(customers.map(c => c.id));
-                      }
-                    }}
-                  >
-                    <input 
-                      type="checkbox" 
-                      checked={selectedCustomerIds.length === customers.length} 
-                      readOnly 
-                      className="cursor-pointer accent-[var(--color-aqua)] w-4 h-4" 
-                    />
-                    <span className="text-sm font-bold text-slate-700">Select All / Deselect All</span>
-                  </div>
                   {customers.filter(c => c.name.toLowerCase().includes(customerSearchTerm.toLowerCase()) || c.id.toLowerCase().includes(customerSearchTerm.toLowerCase())).map(c => (
                     <div 
                       key={c.id} 
-                      tabIndex={0}
-                      className="flex items-center gap-3 p-2 hover:bg-[var(--color-aqua)]/5 rounded-md cursor-pointer transition-colors focus:bg-[var(--color-aqua)]/10 focus:outline-none" 
+                      className="flex items-center gap-3 p-2 hover:bg-[var(--color-aqua)]/5 rounded-md cursor-pointer transition-colors" 
                       onClick={() => {
                         if (!selectedCustomerIds.includes(c.id)) setSelectedCustomerIds(prev => [...prev, c.id]);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          if (!selectedCustomerIds.includes(c.id)) setSelectedCustomerIds(prev => [...prev, c.id]);
-                          setCustomerDropdownOpen(false);
-                        }
+                        setCustomerSearchTerm("");
+                        setCustomerDropdownOpen(false);
                       }}
                     >
-                      <input 
-                        type="checkbox" 
-                        checked={selectedCustomerIds.includes(c.id)} 
-                        readOnly 
-                        className="cursor-pointer accent-[var(--color-aqua)] w-4 h-4" 
-                      />
                       <div className="flex flex-col">
                         <span className="text-sm font-medium text-slate-900">{c.name}</span>
                         <span className="text-[10px] text-slate-500">{c.id}</span>
                       </div>
                     </div>
                   ))}
+                  {customers.filter(c => c.name.toLowerCase().includes(customerSearchTerm.toLowerCase()) || c.id.toLowerCase().includes(customerSearchTerm.toLowerCase())).length === 0 && (
+                    <div className="p-3 text-center text-sm text-slate-500">No customers found.</div>
+                  )}
                 </div>
               )}
             </div>
@@ -381,11 +357,22 @@ export default function POSPage() {
                 <div 
                   key={c.id} 
                   onClick={() => setActiveCustomerId(c.id)}
-                  className={`shrink-0 px-3 py-1.5 border rounded-lg cursor-pointer transition-colors whitespace-nowrap min-w-[110px] shadow-sm
+                  className={`relative shrink-0 pl-3 pr-8 py-1.5 border rounded-lg cursor-pointer transition-colors whitespace-nowrap min-w-[110px] shadow-sm
                   ${c.id === activeCustomerId ? 'border-[var(--color-aqua)] bg-[var(--color-aqua)]/5' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
                 >
                   <p className={`text-xs font-bold ${c.id === activeCustomerId ? 'text-[var(--color-ocean-blue)]' : 'text-slate-700'}`}>{c.name}</p>
                   <p className="text-[10px] text-slate-500 mt-0.5">{c.id}</p>
+                  
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteSessionId(c.id);
+                    }}
+                    className={`absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors
+                    ${c.id === activeCustomerId ? 'text-[var(--color-ocean-blue)]' : 'text-slate-400 hover:text-slate-600'}`}
+                  >
+                    <Trash2 size={12} />
+                  </button>
                 </div>
               ))}
               {selectedCustomerIds.length === 0 && (
@@ -583,11 +570,8 @@ export default function POSPage() {
               </div>
             </div>
             <div className="flex justify-between gap-3 mt-4 w-full px-1">
-              <Button onClick={handlePrint} variant="outline" className="flex-1 h-12 text-[var(--color-aqua)] border-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/10 hover:text-[var(--color-aqua)] font-bold text-sm md:text-base shadow-sm min-w-0">
+              <Button onClick={handlePrint} variant="outline" className="w-full h-12 text-[var(--color-aqua)] border-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/10 hover:text-[var(--color-aqua)] font-bold text-sm md:text-base shadow-sm min-w-0">
                 Print Bill
-              </Button>
-              <Button onClick={() => setCompleteSaleModal(true)} className="flex-1 h-12 bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90 text-white font-bold text-sm md:text-base shadow-sm min-w-0">
-                {t("completeSale")}
               </Button>
             </div>
           </div>
@@ -609,7 +593,7 @@ export default function POSPage() {
                </div>
              </div>
              <div className="flex-1 p-2 space-y-2 overflow-y-auto custom-scrollbar">
-                {customers.filter(c => carts[c.id]?.length > 0 && (activeSessionSearchTerm === "" || c.name.toLowerCase().includes(activeSessionSearchTerm.toLowerCase()))).map(c => {
+                {customers.filter(c => carts[c.id]?.length > 0 && selectedCustomerIds.includes(c.id) && (activeSessionSearchTerm === "" || c.name.toLowerCase().includes(activeSessionSearchTerm.toLowerCase()))).map(c => {
                   const cart = carts[c.id];
                   const cSub = cart.reduce((sum, item) => sum + item.total, 0);
                   const cTotal = cSub + (cSub * 0.08);
@@ -650,37 +634,11 @@ export default function POSPage() {
              </div>
           </div>
 
-          <div className="bg-[var(--color-ocean-blue)] rounded-xl shadow-md p-4 text-white shrink-0 relative overflow-hidden w-full max-w-full">
-            <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/5 rounded-full blur-2xl"></div>
-            <div className="absolute -left-6 -bottom-6 w-32 h-32 bg-[var(--color-aqua)]/10 rounded-full blur-2xl"></div>
-            
-            <h3 className="text-slate-300 text-xs font-medium mb-3 uppercase tracking-wider relative z-10 px-1">{t("grandSummary")}</h3>
-            
-            <div className="space-y-2 text-sm relative z-10 px-1 pr-4">
-              <div className="flex justify-between items-center w-full gap-4">
-                <span className="text-slate-300 truncate">Total Items</span>
-                <span className="font-semibold shrink-0">{totalItems}</span>
-              </div>
-              <div className="flex justify-between items-center w-full gap-4">
-                <span className="text-slate-300 truncate">Combined Subtotal</span>
-                <span className="font-semibold shrink-0">RS {combinedSubtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between items-center w-full gap-4">
-                <span className="text-slate-300 truncate">Commission ({commissionRate}%)</span>
-                <span className="font-semibold shrink-0">RS {totalCommission.toFixed(2)}</span>
-              </div>
-            </div>
-
-            <div className="mt-4 pt-3 border-t border-white/20 relative z-10 px-1">
-              <p className="text-slate-300 text-[10px] mb-1">{t("grandTotal")}</p>
-              <h2 className="text-2xl md:text-3xl font-bold text-[var(--color-aqua)] tracking-tight truncate">RS {grandTotal.toFixed(2)}</h2>
-            </div>
-
-            <div className="w-full px-1 mt-4">
-              <Button onClick={() => setPayAllModal(true)} className="w-full mx-auto h-10 md:h-11 bg-orange-600 hover:bg-orange-700 text-white font-bold text-sm shadow-sm relative z-10 block">
-                Save Invoice
-              </Button>
-            </div>
+          <div className="mt-auto pt-4 shrink-0 w-full max-w-full">
+            <Button onClick={() => setPayAllModal(true)} className="w-full mx-auto h-12 md:h-14 bg-orange-600 hover:bg-orange-700 text-white font-bold text-base md:text-lg shadow-sm rounded-xl transition-all relative overflow-hidden group">
+              <span className="relative z-10">Save Sales</span>
+              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
+            </Button>
           </div>
         </div>
       </div>
@@ -691,7 +649,7 @@ export default function POSPage() {
           <DialogHeader>
             <DialogTitle className="text-xl text-red-600">Delete Session?</DialogTitle>
             <DialogDescription className="text-slate-700 mt-2">
-              Are you sure you want to delete this session? The current bill and customer session will be completely removed.
+              Are you sure you want to delete this session? The active bill for this customer will be removed.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-4">
@@ -747,7 +705,7 @@ export default function POSPage() {
       <Dialog open={payAllModal} onOpenChange={setPayAllModal}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle className="text-xl">Pay All Invoices?</DialogTitle>
+            <DialogTitle className="text-xl">Save All Sales?</DialogTitle>
             <DialogDescription>
               You are about to settle <strong className="text-slate-900">2 customer orders</strong> for a Grand Total of <strong className="text-orange-600">RS 266.76</strong>.
             </DialogDescription>
@@ -757,7 +715,7 @@ export default function POSPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPayAllModal(false)}>Cancel</Button>
-            <Button onClick={handleSaveAllInvoices} className="bg-orange-500 hover:bg-orange-600 text-white">Save All Invoices</Button>
+            <Button onClick={handleSaveAllInvoices} className="bg-orange-500 hover:bg-orange-600 text-white">Save All Sales</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

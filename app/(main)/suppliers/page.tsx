@@ -18,7 +18,34 @@ const initialPurchaseOrders = [
 ];
 
 export default function SuppliersPage() {
-  const { t } = useLanguage();
+  const { t, suppliers, inventory, updateProductStock, addSupplierPurchase } = useLanguage();
+  const [restockModal, setRestockModal] = useState(false);
+  const [restockData, setRestockData] = useState({ supplierId: "", productId: "", qty: "", costPrice: "", refNo: "" });
+
+  const handleRestockSubmit = () => {
+    const qty = parseInt(restockData.qty);
+    const cost = parseFloat(restockData.costPrice);
+    if (!restockData.supplierId || !restockData.productId || isNaN(qty) || isNaN(cost) || qty <= 0 || cost <= 0) return;
+    
+    updateProductStock(restockData.productId, qty);
+
+    const product = inventory.find(p => p.id === restockData.productId);
+    const productName = product ? product.title : "Product";
+
+    const newPO = {
+      id: restockData.refNo || `PO-${Date.now().toString().slice(-4)}`,
+      date: new Date().toISOString(),
+      items: qty,
+      totalAmount: qty * cost,
+      paidAmount: 0,
+      status: "Pending" as const,
+      products: [{ id: restockData.productId, name: productName, qty: qty, price: cost, total: qty * cost }]
+    };
+    addSupplierPurchase(restockData.supplierId, newPO);
+
+    setRestockModal(false);
+    setRestockData({ supplierId: "", productId: "", qty: "", costPrice: "", refNo: "" });
+  };
   const [pos, setPos] = useState(initialPurchaseOrders);
   const [activeTab, setActiveTab] = useState("All POs");
   const [searchQuery, setSearchQuery] = useState("");
@@ -102,6 +129,12 @@ export default function SuppliersPage() {
         <div className="flex items-center gap-3">
           <Button variant="outline" className="bg-white border-slate-200">
             Export Reports
+          </Button>
+          <Button 
+            onClick={() => setRestockModal(true)} 
+            className="bg-orange-500 hover:bg-orange-600 text-white font-semibold"
+          >
+            <Plus size={18} className="mr-2" /> Restock Stock
           </Button>
           <Button 
             onClick={() => {
@@ -407,6 +440,64 @@ export default function SuppliersPage() {
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setDeleteModal(false)}>Cancel</Button>
             <Button onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700 text-white">Delete PO</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Restock Modal */}
+      <Dialog open={restockModal} onOpenChange={setRestockModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Restock Stock</DialogTitle>
+            <DialogDescription>
+              Record a new stock purchase and add dues to the supplier's ledger.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Supplier *</label>
+              <select 
+                className="w-full h-10 px-3 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-[var(--color-aqua)]"
+                value={restockData.supplierId}
+                onChange={e => setRestockData({...restockData, supplierId: e.target.value})}
+              >
+                <option value="">-- Choose Supplier --</option>
+                {suppliers.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Product *</label>
+              <select 
+                className="w-full h-10 px-3 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-[var(--color-aqua)]"
+                value={restockData.productId}
+                onChange={e => setRestockData({...restockData, productId: e.target.value})}
+              >
+                <option value="">-- Choose Product --</option>
+                {inventory.map(p => (
+                  <option key={p.id} value={p.id}>{p.title}</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Quantity *</label>
+                <Input type="number" value={restockData.qty} onChange={e => setRestockData({...restockData, qty: e.target.value})} placeholder="e.g. 100" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Unit Cost (RS) *</label>
+                <Input type="number" value={restockData.costPrice} onChange={e => setRestockData({...restockData, costPrice: e.target.value})} placeholder="0.00" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Reference / Bill No (Optional)</label>
+              <Input value={restockData.refNo} onChange={e => setRestockData({...restockData, refNo: e.target.value})} placeholder="e.g. INV-2023" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRestockModal(false)}>Cancel</Button>
+            <Button onClick={handleRestockSubmit} className="bg-orange-500 hover:bg-orange-600 text-white">Add Stock</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

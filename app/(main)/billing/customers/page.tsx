@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 
 export default function TodaysBillingPage() {
-  const { customers, selectedDate, addExpense } = useLanguage();
+  const { customers, selectedDate, addExpense, carts } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
 
@@ -31,13 +31,19 @@ export default function TodaysBillingPage() {
 
   const todayCustomers = customers.filter(c => {
     const hasTodayInvoice = c.invoices?.some(inv => isDateInRange(inv.date, selectedDate));
+    const hasActiveSession = carts[c.id] && carts[c.id].length > 0;
     const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.id.toLowerCase().includes(searchQuery.toLowerCase());
-    return hasTodayInvoice && matchesSearch;
+    return (hasTodayInvoice || hasActiveSession) && matchesSearch;
   });
 
   const totalTodaySales = todayCustomers.reduce((sum, c) => {
     const todayInvoices = c.invoices?.filter(inv => isDateInRange(inv.date, selectedDate)) || [];
     return sum + todayInvoices.reduce((s, inv) => s + inv.totalAmount, 0);
+  }, 0);
+
+  const totalTodayExpense = todayCustomers.reduce((sum, c) => {
+    const todayExpenses = c.ledger?.filter(entry => entry.type === "Expense Entry" && isDateInRange(entry.date, selectedDate)) || [];
+    return sum + todayExpenses.reduce((s, entry) => s + entry.expense, 0);
   }, 0);
 
   const handleExpenseSubmit = () => {
@@ -65,7 +71,10 @@ export default function TodaysBillingPage() {
         </div>
         <div className="flex items-center gap-3">
           <Badge variant="secondary" className="bg-blue-100 text-blue-700 text-sm px-3 py-1 font-bold">
-            RS {totalTodaySales.toLocaleString()} Today
+            RS {totalTodaySales.toLocaleString()} Sales Today
+          </Badge>
+          <Badge variant="secondary" className="bg-orange-100 text-orange-700 text-sm px-3 py-1 font-bold">
+            RS {totalTodayExpense.toLocaleString()} Expense Today
           </Badge>
         </div>
       </div>
@@ -107,7 +116,9 @@ export default function TodaysBillingPage() {
                         {customer.name}
                         <Badge variant="secondary" className="bg-[var(--color-aqua)]/10 text-[var(--color-ocean-blue)] text-xs font-semibold">{todayInvoices.length} Invoices</Badge>
                       </h3>
-                      <p className="text-sm text-slate-500">{customer.id} • {customer.phone || 'No phone'}</p>
+                      <p className="text-sm text-slate-500">
+                        {customer.id} • {customer.address ? `${customer.address} • ` : ''}{customer.phone || 'No phone'}
+                      </p>
                     </div>
                   </div>
                   
@@ -193,12 +204,12 @@ export default function TodaysBillingPage() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-900">Description</label>
+              <label className="text-sm font-bold text-slate-900">Bill / Item Details</label>
               <Input 
                 type="text" 
                 value={expenseData.description} 
                 onChange={(e) => setExpenseData({...expenseData, description: e.target.value})} 
-                placeholder="e.g. Delivery Charges" 
+                placeholder="e.g. Items taken during active session" 
               />
             </div>
           </div>
