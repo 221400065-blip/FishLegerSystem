@@ -113,6 +113,23 @@ export function Navbar() {
     setIsDatePickerOpen(false);
   };
 
+  const getPageTitle = () => {
+    if (pathname.includes('/customers/') && pathname.split('/').length > 2) return "Customer Ledger";
+    if (pathname.includes('/customers')) return "Customer Directory";
+    if (pathname.includes('/billing')) return "Today's Billing";
+    if (pathname.includes('/pos')) return "Sales Terminal";
+    if (pathname.includes('/inventory')) return "Inventory";
+    if (pathname.includes('/suppliers')) return "Suppliers";
+    if (pathname.includes('/purchase-bills')) return "Purchase Bills";
+    if (pathname.includes('/settings')) return "Settings";
+    if (pathname.includes('/profile')) return "Profile";
+    if (pathname.includes('/expenses')) return "Expenses";
+    if (pathname.includes('/reports')) return "Reports";
+    return t("welcomeBack");
+  };
+
+  const isSearchHidden = pathname?.startsWith('/settings') || pathname?.startsWith('/billing') || (pathname?.startsWith('/customers/') && pathname.split('/').length > 2);
+
   const formattedDisplayDate = () => {
     if (startDate === endDate) {
       return new Date(startDate).toLocaleDateString("en-US", { day: 'numeric', month: 'short', year: 'numeric' });
@@ -132,12 +149,12 @@ export function Navbar() {
           >
             <Menu size={24} />
           </button>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 truncate">{t("welcomeBack")}</h1>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 truncate">{getPageTitle()}</h1>
         </div>
       </div>
 
       {/* Centered Search Bar */}
-      {!pathname?.startsWith('/settings') && (
+      {!isSearchHidden && (
         <div className="relative w-full md:w-auto order-3 md:order-2 md:flex-1 max-w-md mx-auto flex justify-center mt-1 md:mt-0">
            <div className="relative w-full">
              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
@@ -151,7 +168,7 @@ export function Navbar() {
       )}
 
       {/* Date Picker Button */}
-      <div className={`relative w-full md:w-auto order-4 md:order-3 flex justify-end mt-1 md:mt-0 shrink-0 ${pathname?.startsWith('/settings') ? 'md:ml-auto' : ''}`}>
+      <div className={`relative w-full md:w-auto order-4 md:order-3 flex justify-end mt-1 md:mt-0 shrink-0 ${isSearchHidden ? 'md:ml-auto' : ''}`}>
         <div className="relative w-full md:w-auto flex justify-end">
           <button
             type="button"

@@ -15,7 +15,8 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Pin
+  Pin,
+  FileText
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/lib/LanguageContext";
@@ -37,6 +38,7 @@ export function Sidebar() {
   const navItems = [
     { id: "dashboard", href: "/dashboard", icon: LayoutDashboard },
     { id: "posTerminal", href: "/pos", icon: MonitorSmartphone },
+    { id: "billing", href: "/billing", icon: FileText },
     { id: "customers", href: "/customers", icon: Users },
     { id: "inventory", href: "/inventory", icon: Package },
     { 

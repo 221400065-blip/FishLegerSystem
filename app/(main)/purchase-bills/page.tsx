@@ -21,20 +21,22 @@ export default function PurchaseBillsPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedBill, setSelectedBill] = useState<any>(null);
   const [bills, setBills] = useState(purchaseBills);
-  const [newBill, setNewBill] = useState({ supplier: "", amount: "" });
+  const [newBill, setNewBill] = useState({ supplier: "", amount: "", date: "", reference: "", notes: "" });
 
   const handleAddBill = () => {
     if (!newBill.supplier || !newBill.amount) return;
     const newEntry = {
       id: `PB-${1044 + bills.length}`,
-      date: new Date().toISOString().split('T')[0],
+      date: newBill.date || new Date().toISOString().split('T')[0],
       supplier: newBill.supplier,
       amount: parseFloat(newBill.amount),
+      reference: newBill.reference,
+      notes: newBill.notes,
       status: "Pending"
     };
     setBills([newEntry, ...bills]);
     setIsAddModalOpen(false);
-    setNewBill({ supplier: "", amount: "" });
+    setNewBill({ supplier: "", amount: "", date: "", reference: "", notes: "" });
   };
 
   return (
@@ -106,22 +108,48 @@ export default function PurchaseBillsPage() {
             <DialogDescription>Enter the supplier and amount to record a new purchase bill.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Supplier Name</label>
-              <Input 
-                value={newBill.supplier}
-                onChange={(e) => setNewBill({...newBill, supplier: e.target.value})}
-                placeholder="e.g. TechCorp Ltd" 
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Amount (RS)</label>
-              <Input 
-                type="number"
-                value={newBill.amount}
-                onChange={(e) => setNewBill({...newBill, amount: e.target.value})}
-                placeholder="0.00" 
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2 col-span-2">
+                <label className="text-sm font-medium">Supplier Name *</label>
+                <Input 
+                  value={newBill.supplier}
+                  onChange={(e) => setNewBill({...newBill, supplier: e.target.value})}
+                  placeholder="e.g. TechCorp Ltd" 
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Bill Amount (RS) *</label>
+                <Input 
+                  type="number"
+                  value={newBill.amount}
+                  onChange={(e) => setNewBill({...newBill, amount: e.target.value})}
+                  placeholder="0.00" 
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Bill Date</label>
+                <Input 
+                  type="date"
+                  value={newBill.date}
+                  onChange={(e) => setNewBill({...newBill, date: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <label className="text-sm font-medium">Reference / Invoice No</label>
+                <Input 
+                  value={newBill.reference}
+                  onChange={(e) => setNewBill({...newBill, reference: e.target.value})}
+                  placeholder="e.g. INV-2026-001" 
+                />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <label className="text-sm font-medium">Notes / Remarks</label>
+                <Input 
+                  value={newBill.notes}
+                  onChange={(e) => setNewBill({...newBill, notes: e.target.value})}
+                  placeholder="Any additional details..." 
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -160,6 +188,18 @@ export default function PurchaseBillsPage() {
                     </Badge>
                   </div>
                 </div>
+                {selectedBill.reference && (
+                  <div className="space-y-1">
+                    <span className="text-xs text-slate-500 uppercase tracking-wider">Reference No</span>
+                    <p className="font-medium text-slate-700">{selectedBill.reference}</p>
+                  </div>
+                )}
+                {selectedBill.notes && (
+                  <div className="space-y-1 col-span-2 mt-2">
+                    <span className="text-xs text-slate-500 uppercase tracking-wider">Notes</span>
+                    <p className="text-sm text-slate-600 bg-slate-50 p-2 rounded-md border border-slate-100">{selectedBill.notes}</p>
+                  </div>
+                )}
               </div>
 
               <div className="border border-slate-200 rounded-lg overflow-hidden">

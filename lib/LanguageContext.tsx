@@ -23,6 +23,7 @@ const en: Translations = {
   // Sidebar
   dashboard: "Dashboard",
   posTerminal: "Ledger System",
+  billing: "Today's Billing",
   customers: "Customers",
   inventory: "Inventory",
   suppliers: "Suppliers",
@@ -102,6 +103,7 @@ const ur: Translations = {
   // Sidebar
   dashboard: "ڈیش بورڈ",
   posTerminal: "لیجر سسٹم",
+  billing: "آج کی بلنگ",
   customers: "گاہک",
   inventory: "اسٹاک",
   suppliers: "سپلائرز",
@@ -182,7 +184,41 @@ const translations = {
   ur,
 };
 
-export type Customer = { id: string; name: string; phone?: string; billed?: number; paid?: number; status?: string; };
+export interface Invoice {
+  id: string; // e.g. INV-1001
+  date: string;
+  totalAmount: number;
+  paidAmount: number;
+  status: "Pending" | "Partial" | "Paid";
+  items: any[];
+}
+
+export interface LedgerEntry {
+  id: string;
+  date: string;
+  refNo: string;
+  type: "Sale Invoice" | "Payment Recv" | "Expense Entry";
+  description: string;
+  debit: number;
+  credit: number;
+  expense: number;
+  balance: number;
+}
+
+export type Customer = { 
+  id: string; 
+  name: string; 
+  phone?: string; 
+  email?: string; 
+  address?: string; 
+  billed?: number; 
+  paid?: number; 
+  status?: string; 
+  creditLimit?: number; 
+  invoices?: Invoice[]; 
+  ledger?: LedgerEntry[]; 
+  createdAt?: string; 
+};
 
 interface LanguageContextType {
   language: Language;
@@ -208,6 +244,9 @@ interface LanguageContextType {
   addCustomer: (customer: Customer) => void;
   updateCustomer: (customer: Customer) => void;
   deleteCustomer: (id: string) => void;
+  addInvoice: (customerId: string, invoice: Invoice) => void;
+  receivePayment: (customerId: string, amount: number, selectedInvoiceIds: string[]) => void;
+  addExpense: (customerId: string, amount: number, description: string) => void;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -284,6 +323,116 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     setCustomers(prev => prev.filter(c => c.id !== id));
   };
 
+  const addInvoice = (customerId: string, invoice: Invoice) => {
+    setCustomers(prev => prev.map(c => {
+      if (c.id === customerId) {
+        const currentBilled = c.billed || 0;
+        const currentPaid = c.paid || 0;
+        const currentBalance = currentBilled - currentPaid;
+        const newBalance = currentBalance + invoice.totalAmount;
+        
+        const newLedgerEntry: LedgerEntry = {
+          id: `L-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+          date: invoice.date || new Date().toISOString(),
+          refNo: invoice.id,
+          type: "Sale Invoice",
+          description: "Products Purchased",
+          debit: invoice.totalAmount,
+          credit: 0,
+          expense: 0,
+          balance: newBalance
+        };
+
+        return {
+          ...c,
+          billed: currentBilled + invoice.totalAmount,
+          invoices: [...(c.invoices || []), invoice],
+          ledger: [...(c.ledger || []), newLedgerEntry]
+        };
+      }
+      return c;
+    }));
+  };
+
+  const receivePayment = (customerId: string, amount: number, selectedInvoiceIds: string[]) => {
+    setCustomers(prev => prev.map(c => {
+      if (c.id === customerId) {
+        const currentBilled = c.billed || 0;
+        const currentPaid = c.paid || 0;
+        const currentBalance = currentBilled - currentPaid;
+        const newBalance = currentBalance - amount;
+        
+        const newLedgerEntry: LedgerEntry = {
+          id: `L-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+          date: new Date().toISOString(),
+          refNo: `PAY-${Date.now().toString().slice(-4)}`,
+          type: "Payment Recv",
+          description: "Payment Received",
+          debit: 0,
+          credit: amount,
+          expense: 0,
+          balance: newBalance
+        };
+
+        let remainingAmount = amount;
+        const updatedInvoices = (c.invoices || []).map(inv => {
+          if (selectedInvoiceIds.includes(inv.id) && remainingAmount > 0) {
+            const pendingForInvoice = inv.totalAmount - inv.paidAmount;
+            if (pendingForInvoice > 0) {
+              const amountToApply = Math.min(pendingForInvoice, remainingAmount);
+              remainingAmount -= amountToApply;
+              const newPaid = inv.paidAmount + amountToApply;
+              return {
+                ...inv,
+                paidAmount: newPaid,
+                status: (newPaid >= inv.totalAmount ? "Paid" : "Partial") as "Paid" | "Partial"
+              };
+            }
+          }
+          return inv;
+        });
+
+        return {
+          ...c,
+          paid: currentPaid + amount,
+          invoices: updatedInvoices,
+          ledger: [...(c.ledger || []), newLedgerEntry]
+        };
+      }
+      return c;
+    }));
+  };
+
+  const addExpense = (customerId: string, amount: number, description: string) => {
+    setCustomers(prev => prev.map(c => {
+      if (c.id === customerId) {
+        const currentBilled = c.billed || 0;
+        const currentPaid = c.paid || 0;
+        const currentBalance = currentBilled - currentPaid;
+        const newBalance = currentBalance + amount;
+        
+        const newLedgerEntry: LedgerEntry = {
+          id: `L-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+          date: new Date().toISOString(),
+          refNo: `EXP-${Date.now().toString().slice(-4)}`,
+          type: "Expense Entry",
+          description: description,
+          debit: 0,
+          credit: 0,
+          expense: amount,
+          balance: newBalance
+        };
+
+        return {
+          ...c,
+          billed: currentBilled + amount, 
+          ledger: [...(c.ledger || []), newLedgerEntry]
+        };
+      }
+      return c;
+    }));
+  };
+
   const markNotificationAsRead = (id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
   };
@@ -330,7 +479,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       isSidebarHovered, setIsSidebarHovered,
       theme, setTheme,
       notifications, markNotificationAsRead, deleteNotification, clearAllNotifications,
-      customers, addCustomer, updateCustomer, deleteCustomer
+      customers, addCustomer, updateCustomer, deleteCustomer, addInvoice, receivePayment, addExpense
     }}>
       <div dir={language === 'ur' ? 'rtl' : 'ltr'}>
         {children}

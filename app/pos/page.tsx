@@ -27,7 +27,7 @@ const products = [
 ];
 
 export default function POSPage() {
-  const { t, customerBillFormat, customers, addCustomer } = useLanguage();
+  const { t, customerBillFormat, customers, addCustomer, addInvoice } = useLanguage();
   const router = useRouter();
   const [completeSaleModal, setCompleteSaleModal] = useState(false);
   const [payAllModal, setPayAllModal] = useState(false);
@@ -183,6 +183,50 @@ export default function POSPage() {
       setActiveCustomerId(customers[0]?.id || "");
     }
     setDeleteSessionId(null);
+  };
+
+  const handleCompleteSale = () => {
+    if (activeCart.length > 0) {
+      const invoice = {
+        id: `INV-${Date.now().toString().slice(-4)}-${Math.floor(Math.random()*100)}`,
+        date: new Date().toISOString(),
+        totalAmount: customerTotal,
+        paidAmount: 0,
+        status: "Pending" as const,
+        items: activeCart
+      };
+      addInvoice(activeCustomerId, invoice);
+      
+      setCarts(prev => {
+        const newCarts = { ...prev };
+        newCarts[activeCustomerId] = [];
+        return newCarts;
+      });
+    }
+    setCompleteSaleModal(false);
+  };
+
+  const handleSaveAllInvoices = () => {
+    Object.entries(carts).forEach(([custId, cartItems]) => {
+      if (cartItems.length > 0) {
+        const cSub = cartItems.reduce((sum, item) => sum + item.total, 0);
+        const cTotal = cSub + (cSub * 0.08);
+        
+        const invoice = {
+          id: `INV-${Date.now().toString().slice(-4)}-${Math.floor(Math.random()*100)}`,
+          date: new Date().toISOString(),
+          totalAmount: cTotal,
+          paidAmount: 0,
+          status: "Pending" as const,
+          items: cartItems
+        };
+        addInvoice(custId, invoice);
+      }
+    });
+
+    setCarts({});
+    setSelectedCustomerIds([]);
+    setPayAllModal(false);
   };
 
   return (
@@ -695,7 +739,7 @@ export default function POSPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCompleteSaleModal(false)}>Cancel</Button>
-            <Button onClick={() => setCompleteSaleModal(false)} className="bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90">Confirm Sale</Button>
+            <Button onClick={handleCompleteSale} className="bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90">Confirm Sale</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -713,7 +757,7 @@ export default function POSPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPayAllModal(false)}>Cancel</Button>
-            <Button onClick={() => setPayAllModal(false)} className="bg-orange-500 hover:bg-orange-600 text-white">Pay All Now</Button>
+            <Button onClick={handleSaveAllInvoices} className="bg-orange-500 hover:bg-orange-600 text-white">Save All Invoices</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

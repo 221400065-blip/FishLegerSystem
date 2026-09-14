@@ -1,5 +1,6 @@
 "use client";
 import { useLanguage } from "@/lib/LanguageContext";
+import { useRouter } from "next/navigation";
 
 import { useState } from "react";
 import { Search, Plus, Edit, Trash2, Eye, ChevronLeft, ChevronRight, DollarSign, Users, CreditCard } from "lucide-react";
@@ -13,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 
 export default function CustomersPage() {
   const { t, customers, addCustomer, updateCustomer, deleteCustomer } = useLanguage();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [activePage, setActivePage] = useState(1);
@@ -25,7 +27,7 @@ export default function CustomersPage() {
   
   // Form and selected item state
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
-  const [formData, setFormData] = useState({ name: "", phone: "", status: "Active" });
+  const [formData, setFormData] = useState({ name: "", phone: "", email: "", address: "", openingBalance: "", status: "Active" });
 
   const filteredCustomers = customers.filter(customer => {
     const matchesTab = activeTab === "All" || customer.status === activeTab;
@@ -46,18 +48,20 @@ export default function CustomersPage() {
       id: `C-00${customers.length + 1}`,
       name: formData.name,
       phone: formData.phone,
-      billed: 0,
+      email: formData.email,
+      address: formData.address,
+      billed: formData.openingBalance ? parseFloat(formData.openingBalance) : 0,
       paid: 0,
       status: formData.status
     };
     addCustomer(newCustomer);
     setAddCustomerModal(false);
-    setFormData({ name: "", phone: "", status: "Active" });
+    setFormData({ name: "", phone: "", email: "", address: "", openingBalance: "", status: "Active" });
   };
 
   const handleEditSubmit = () => {
     if (selectedCustomer) {
-      updateCustomer({ ...selectedCustomer, name: formData.name, phone: formData.phone, status: formData.status });
+      updateCustomer({ ...selectedCustomer, name: formData.name, phone: formData.phone, email: formData.email, address: formData.address, status: formData.status });
     }
     setEditCustomerModal(false);
   };
@@ -71,7 +75,7 @@ export default function CustomersPage() {
 
   const openEdit = (c: any) => {
     setSelectedCustomer(c);
-    setFormData({ name: c.name, phone: c.phone, status: c.status });
+    setFormData({ name: c.name || "", phone: c.phone || "", email: c.email || "", address: c.address || "", openingBalance: "", status: c.status || "Active" });
     setEditCustomerModal(true);
   };
 
@@ -99,7 +103,7 @@ export default function CustomersPage() {
           </Badge>
           <Button 
             onClick={() => {
-              setFormData({ name: "", phone: "", status: "Active" });
+              setFormData({ name: "", phone: "", email: "", address: "", openingBalance: "", status: "Active" });
               setAddCustomerModal(true);
             }} 
             className="bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90 text-white font-semibold"
@@ -111,7 +115,7 @@ export default function CustomersPage() {
 
       {/* Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="rounded-xl shadow-sm border-slate-200">
+        <Card className="rounded-xl shadow-sm border-slate-200 cursor-pointer hover:border-[var(--color-aqua)] hover:shadow-md transition-all" onClick={() => setActiveTab("All")}>
           <CardContent className="p-6">
             <div className="flex justify-between items-start">
               <div className="space-y-2">
@@ -125,7 +129,7 @@ export default function CustomersPage() {
           </CardContent>
         </Card>
         
-        <Card className="rounded-xl shadow-sm border-slate-200">
+        <Card className="rounded-xl shadow-sm border-slate-200 cursor-pointer hover:border-orange-400 hover:shadow-md transition-all" onClick={() => setActiveTab("All")}>
           <CardContent className="p-6">
             <div className="flex justify-between items-start">
               <div className="space-y-2">
@@ -139,7 +143,7 @@ export default function CustomersPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl shadow-sm border-slate-200">
+        <Card className="rounded-xl shadow-sm border-slate-200 cursor-pointer hover:border-green-400 hover:shadow-md transition-all" onClick={() => setActiveTab("Active")}>
           <CardContent className="p-6">
             <div className="flex justify-between items-start">
               <div className="space-y-2">
@@ -204,7 +208,7 @@ export default function CustomersPage() {
                 paginatedCustomers.map((customer) => {
                   const initials = customer.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
                   return (
-                    <TableRow key={customer.id} className="hover:bg-slate-50/50 transition-colors">
+                    <TableRow key={customer.id} className="cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => router.push(`/customers/${customer.id}`)}>
                       <TableCell className="font-medium text-slate-500">{customer.id}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-3">
@@ -240,13 +244,13 @@ export default function CustomersPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <Button onClick={() => openView(customer)} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-[var(--color-ocean-blue)]">
+                          <Button onClick={(e) => { e.stopPropagation(); openView(customer); }} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-[var(--color-ocean-blue)]">
                             <Eye size={16} />
                           </Button>
-                          <Button onClick={() => openEdit(customer)} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-[var(--color-aqua)]">
+                          <Button onClick={(e) => { e.stopPropagation(); openEdit(customer); }} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-[var(--color-aqua)]">
                             <Edit size={16} />
                           </Button>
-                          <Button onClick={() => openDelete(customer)} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red-500">
+                          <Button onClick={(e) => { e.stopPropagation(); openDelete(customer); }} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red-500">
                             <Trash2 size={16} />
                           </Button>
                         </div>
@@ -324,6 +328,18 @@ export default function CustomersPage() {
               <Input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="e.g. +92 300 1234567" />
             </div>
             <div className="space-y-2">
+              <label className="text-sm font-medium">Email Address</label>
+              <Input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="e.g. johndoe@example.com" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Complete Address</label>
+              <Input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} placeholder="e.g. 123 Main Street, City" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Opening Balance (RS)</label>
+              <Input type="number" value={formData.openingBalance} onChange={e => setFormData({...formData, openingBalance: e.target.value})} placeholder="e.g. 5000" />
+            </div>
+            <div className="space-y-2">
               <label className="text-sm font-medium">Status</label>
               <div className="flex gap-2">
                 <Button onClick={() => setFormData({...formData, status: "Active"})} variant={formData.status === "Active" ? "default" : "outline"} className={formData.status === "Active" ? "bg-green-600 hover:bg-green-700" : ""}>Active</Button>
@@ -357,6 +373,14 @@ export default function CustomersPage() {
               <Input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
             </div>
             <div className="space-y-2">
+              <label className="text-sm font-medium">Email Address</label>
+              <Input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Complete Address</label>
+              <Input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
+            </div>
+            <div className="space-y-2">
               <label className="text-sm font-medium">Status</label>
               <div className="flex gap-2">
                 <Button onClick={() => setFormData({...formData, status: "Active"})} variant={formData.status === "Active" ? "default" : "outline"} className={formData.status === "Active" ? "bg-green-600 hover:bg-green-700 text-white" : ""}>Active</Button>
@@ -388,6 +412,12 @@ export default function CustomersPage() {
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">{selectedCustomer.name}</h3>
                   <p className="text-sm text-slate-500">{selectedCustomer.id} • {selectedCustomer.phone}</p>
+                  {(selectedCustomer.email || selectedCustomer.address) && (
+                    <div className="mt-2 text-xs text-slate-500 space-y-1">
+                      {selectedCustomer.email && <p>Email: {selectedCustomer.email}</p>}
+                      {selectedCustomer.address && <p>Address: {selectedCustomer.address}</p>}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
