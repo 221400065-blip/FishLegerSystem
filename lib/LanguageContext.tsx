@@ -222,14 +222,15 @@ export interface Supplier {
   purchases?: SupplierPurchase[];
 }
 
-export interface Invoice {
-  id: string; // e.g. INV-1001
-  date: string;
-  totalAmount: number;
-  paidAmount: number;
-  status: "Pending" | "Partial" | "Paid";
-  items: any[];
-}
+export type Invoice = { 
+  id: string; 
+  date: string; 
+  totalAmount: number; 
+  paidAmount: number; 
+  status: "Paid" | "Pending" | "Overdue" | "Partial"; 
+  items: any[]; 
+  sessionClosed?: boolean;
+};
 
 export interface LedgerEntry {
   id: string;
@@ -264,6 +265,19 @@ export type Customer = {
   createdAt?: string; 
 };
 
+export interface BillingFeedItem {
+  id: string;
+  customerId: string;
+  customerName: string;
+  productId: string;
+  name: string;
+  price: number | string;
+  qty: number | string;
+  total: number;
+  timestamp: number;
+  isRestored?: boolean;
+}
+
 interface LanguageContextType {
   language: Language;
   t: (key: string) => string;
@@ -281,6 +295,7 @@ interface LanguageContextType {
   theme: "light" | "dark";
   setTheme: (theme: "light" | "dark") => void;
   notifications: Notification[];
+  addNotification: (notification: Omit<Notification, "id" | "isRead" | "date">) => void;
   markNotificationAsRead: (id: string) => void;
   deleteNotification: (id: string) => void;
   clearAllNotifications: () => void;
@@ -291,6 +306,7 @@ interface LanguageContextType {
   addInvoice: (customerId: string, invoice: Invoice) => void;
   receivePayment: (customerId: string, amount: number) => void;
   addExpense: (customerId: string, amount: number, description: string) => void;
+  settleDailySession: (customerId: string) => void;
   
   suppliers: Supplier[];
   addSupplier: (supplier: Supplier) => void;
@@ -306,8 +322,8 @@ interface LanguageContextType {
   deleteInventoryItem: (id: string) => void;
   updateProductStock: (productId: string, qty: number) => void;
 
-  carts: Record<string, any[]>;
-  setCarts: React.Dispatch<React.SetStateAction<Record<string, any[]>>>;
+  billingFeed: BillingFeedItem[];
+  setBillingFeed: React.Dispatch<React.SetStateAction<BillingFeedItem[]>>;
   selectedCustomerIds: string[];
   setSelectedCustomerIds: React.Dispatch<React.SetStateAction<string[]>>;
   activeCustomerId: string;
@@ -325,45 +341,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [theme, setThemeState] = useState<"light" | "dark">("light");
 
-  const [carts, setCarts] = useState<Record<string, any[]>>({
-    "C-001": [],
-    "C-002": [
-      { id: "P-103", name: "USB-C Hub Multi", price: 65.00, qty: 1, total: 65.00 },
-    ],
-  });
-  const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>(["C-001"]);
-  const [activeCustomerId, setActiveCustomerId] = useState<string>("C-001");
+  const [billingFeed, setBillingFeed] = useState<BillingFeedItem[]>([]);
+  const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>([]);
+  const [activeCustomerId, setActiveCustomerId] = useState<string>("");
 
-  const [notifications, setNotifications] = useState<Notification[]>([
-    { id: "1", title: "Low Stock Alert", description: "5 products are running low on stock.", type: "inventory", isRead: false, date: "10 mins ago" },
-    { id: "2", title: "New Order", description: "Ahmed Traders placed an order for RS 1,250.", type: "order", isRead: false, date: "1 hour ago" },
-    { id: "3", title: "Payment Received", description: "Payment of RS 500 received from Zara Malik.", type: "customer", isRead: false, date: "3 hours ago" },
-    { id: "4", title: "System Update", description: "Ledger System v2.1 has been installed successfully.", type: "system", isRead: true, date: "1 day ago" }
-  ]);
-
-  const [customers, setCustomers] = useState<Customer[]>([
-    { id: "C-001", name: "Ahmed Traders", phone: "+92 300 1234567", billed: 12450.00, paid: 10000.00, status: "Active" },
-    { id: "C-002", name: "Ali Electronics", phone: "+92 321 7654321", billed: 3800.00, paid: 3800.00, status: "Active" },
-    { id: "C-003", name: "Zara Imports", phone: "+92 333 9876543", billed: 45600.00, paid: 40000.00, status: "Active" },
-    { id: "C-004", name: "Sana Hussain", phone: "+92 345 1122334", billed: 150.00, paid: 0.00, status: "Inactive" },
-    { id: "C-005", name: "Bilal Ahmed", phone: "+92 300 5566778", billed: 8900.00, paid: 8900.00, status: "Active" },
-    { id: "C-006", name: "Nadia Shah", phone: "+92 311 9988776", billed: 620.00, paid: 500.00, status: "Inactive" },
-  ]);
-
-  const [suppliers, setSuppliers] = useState<Supplier[]>([
-    { id: "S-001", name: "Samsung Electronics Ltd", phone: "+92 300 1112222", totalPurchases: 14250, paid: 14250, payable: 0, status: "Active" },
-    { id: "S-002", name: "Apple Distribution Inc", phone: "+92 300 3334444", totalPurchases: 38000, paid: 15000, payable: 23000, status: "Active" }
-  ]);
-
-  const [inventory, setInventory] = useState<InventoryItem[]>([
-    { id: "P-101", image: "https://placehold.co/80x80/06B6D4/FFFFFF?text=65W", title: "Samsung 65W Charger", category: "Chargers", sku: "CHG-S65W", stock: 45, unitPrice: 25.00, sellingPrice: 45.00 },
-    { id: "P-102", image: "https://placehold.co/80x80/f97316/FFFFFF?text=2M", title: "iPhone Cable 2M", category: "Cables", sku: "CBL-IP2M", stock: 8, unitPrice: 10.00, sellingPrice: 25.00 },
-    { id: "P-103", image: "https://placehold.co/80x80/0B2545/FFFFFF?text=Hub", title: "USB-C Hub Multi", category: "Accessories", sku: "ACC-HUB", stock: 24, unitPrice: 35.00, sellingPrice: 65.00 },
-    { id: "P-104", image: "https://placehold.co/80x80/06B6D4/FFFFFF?text=20W", title: "Fast Charger 20W", category: "Chargers", sku: "CHG-F20W", stock: 12, unitPrice: 8.00, sellingPrice: 18.00 },
-    { id: "P-105", image: "https://placehold.co/80x80/cbd5e1/FFFFFF?text=Stnd", title: "Phone Stand Adjustable", category: "Accessories", sku: "ACC-STND", stock: 0, unitPrice: 5.00, sellingPrice: 15.00 },
-    { id: "P-106", image: "https://placehold.co/80x80/0B2545/FFFFFF?text=Case", title: "Silicone Case Pro", category: "Accessories", sku: "ACC-CASE", stock: 50, unitPrice: 3.00, sellingPrice: 12.00 },
-    { id: "P-107", image: "https://placehold.co/80x80/f97316/FFFFFF?text=CtoC", title: "Type-C to Type-C 1M", category: "Cables", sku: "CBL-CTC1", stock: 14, unitPrice: 6.00, sellingPrice: 15.00 },
-  ]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
 
   const [isClient, setIsClient] = useState(false);
 
@@ -407,6 +392,20 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const addCustomer = (customer: Customer) => {
     setCustomers(prev => [...prev, customer]);
+  };
+
+  const settleDailySession = (customerId: string) => {
+    setCustomers(prev => prev.map(c => {
+      if (c.id !== customerId) return c;
+      const todayStr = new Date().toISOString().split('T')[0];
+      const updatedInvoices = c.invoices?.map(inv => {
+        if (inv.date.startsWith(todayStr)) {
+          return { ...inv, sessionClosed: true };
+        }
+        return inv;
+      }) || [];
+      return { ...c, invoices: updatedInvoices };
+    }));
   };
 
   const updateCustomer = (customer: Customer) => {
@@ -676,6 +675,15 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const addNotification = (notification: Omit<Notification, "id" | "isRead" | "date">) => {
+    setNotifications(prev => [{
+      ...notification,
+      id: `NOTIF-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+      isRead: false,
+      date: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    }, ...prev]);
+  };
+
   const markNotificationAsRead = (id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
   };
@@ -721,17 +729,17 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       isSidebarOpen, setIsSidebarOpen, 
       isSidebarHovered, setIsSidebarHovered,
       theme, setTheme,
-      notifications, markNotificationAsRead, deleteNotification, clearAllNotifications,
-      customers, addCustomer, updateCustomer, deleteCustomer, addInvoice, receivePayment, addExpense,
+      notifications, addNotification, markNotificationAsRead, deleteNotification, clearAllNotifications,
+      customers, addCustomer, updateCustomer, deleteCustomer, addInvoice, receivePayment, addExpense, settleDailySession,
       suppliers, addSupplier, updateSupplier, deleteSupplier, addSupplierPurchase,
       receiveSupplierPayment,
       addSupplierExpense,
       inventory, addInventoryItem, updateInventoryItem, deleteInventoryItem, updateProductStock,
-      carts, setCarts,
+      billingFeed, setBillingFeed,
       selectedCustomerIds, setSelectedCustomerIds,
       activeCustomerId, setActiveCustomerId
     }}>
-      <div dir={language === 'ur' ? 'rtl' : 'ltr'}>
+      <div dir="ltr">
         {children}
       </div>
     </LanguageContext.Provider>

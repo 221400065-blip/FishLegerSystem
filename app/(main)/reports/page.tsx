@@ -1,7 +1,7 @@
 "use client";
 
 import { useLanguage } from "@/lib/LanguageContext";
-import { useState } from "react";
+import React, { useState, Fragment } from "react";
 import { FileText, Printer, Download, Users, Truck, Eye, Receipt } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -114,7 +114,7 @@ export default function ReportsPage() {
             <TableHeader>
               <TableRow className="bg-slate-50/50">
                 <TableHead className="font-semibold text-slate-600">NAME</TableHead>
-                <TableHead className="font-semibold text-slate-600">PHONE</TableHead>
+                <TableHead className="font-semibold text-slate-600">AREA / ADDRESS</TableHead>
                 <TableHead className="text-right font-semibold text-slate-600">
                   {activeTab === "customers" ? "TOTAL SALES" : "TOTAL PURCHASES"}
                 </TableHead>
@@ -127,25 +127,45 @@ export default function ReportsPage() {
             </TableHeader>
             <TableBody>
               {activeTab === "customers" && customers.length > 0 ? (
-                customers.map(c => {
-                  const billed = c.billed || 0;
-                  const paid = c.paid || 0;
-                  const bal = billed - paid;
-                  return (
-                    <TableRow key={c.id} className="hover:bg-slate-50 transition-colors">
-                      <TableCell className="font-semibold text-slate-900">{c.name}</TableCell>
-                      <TableCell className="text-slate-600">{c.phone || '-'}</TableCell>
-                      <TableCell className="text-right text-slate-700 font-medium">RS {billed.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
-                      <TableCell className="text-right text-green-600 font-medium">RS {paid.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
-                      <TableCell className={`text-right font-bold ${bal > 0 ? 'text-red-600' : 'text-slate-900'}`}>RS {bal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
-                      <TableCell className="text-center">
-                        <Button variant="outline" size="sm" onClick={() => openKhata(c, "customer")} className="border-blue-200 text-blue-600 hover:bg-blue-50">
-                          <Eye size={14} className="mr-1" /> View Report
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
+                (() => {
+                  const groupedCustomers = customers.reduce((acc, c) => {
+                    const area = c.address || "Unspecified Area";
+                    if (!acc[area]) acc[area] = [];
+                    acc[area].push(c);
+                    return acc;
+                  }, {} as Record<string, typeof customers>);
+                  
+                  const sortedAreas = Object.keys(groupedCustomers).sort();
+
+                  return sortedAreas.map(area => (
+                    <Fragment key={area}>
+                      <TableRow className="bg-slate-100 hover:bg-slate-100">
+                        <TableCell colSpan={6} className="font-bold text-[var(--color-ocean-blue)] py-2 uppercase tracking-wider text-xs">
+                          {area}
+                        </TableCell>
+                      </TableRow>
+                      {groupedCustomers[area].map(c => {
+                        const billed = c.billed || 0;
+                        const paid = c.paid || 0;
+                        const bal = billed - paid;
+                        return (
+                          <TableRow key={c.id} className="hover:bg-slate-50 transition-colors">
+                            <TableCell className="font-semibold text-slate-900">{c.name}</TableCell>
+                            <TableCell className="text-slate-600 truncate max-w-[150px]" title={c.address || '-'}>{c.address || '-'}</TableCell>
+                            <TableCell className="text-right text-slate-700 font-medium">RS {billed.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                            <TableCell className="text-right text-green-600 font-medium">RS {paid.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                            <TableCell className={`text-right font-bold ${bal > 0 ? 'text-red-600' : 'text-slate-900'}`}>RS {bal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                            <TableCell className="text-center">
+                              <Button variant="outline" size="sm" onClick={() => openKhata(c, "customer")} className="border-blue-200 text-blue-600 hover:bg-blue-50">
+                                <Eye size={14} className="mr-1" /> View Report
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </Fragment>
+                  ));
+                })()
               ) : activeTab === "suppliers" && suppliers.length > 0 ? (
                 suppliers.map(s => {
                   const purchased = s.totalPurchases || 0;

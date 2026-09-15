@@ -65,7 +65,7 @@ export function Sidebar() {
 
   return (
     <aside 
-      className={`fixed left-0 top-0 z-50 h-screen bg-[var(--color-ocean-blue)] transition-all duration-300 shadow-xl flex flex-col ${expanded ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0 md:w-16'}`}
+      className={`print:hidden fixed left-0 top-0 z-50 h-screen bg-[var(--color-ocean-blue)] transition-all duration-300 shadow-xl flex flex-col ${expanded ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0 md:w-16'}`}
       onMouseEnter={() => setIsSidebarHovered(true)}
       onMouseLeave={() => setIsSidebarHovered(false)}
     >

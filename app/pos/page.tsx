@@ -1,7 +1,7 @@
 "use client";
-import { useLanguage } from "@/lib/LanguageContext";
+import { useLanguage, BillingFeedItem } from "@/lib/LanguageContext";
 
-import { MonitorSmartphone, Search, ChevronDown, Plus, Minus, Edit, Trash2, ArrowLeft, User, Settings, LogOut } from "lucide-react";
+import { MonitorSmartphone, Search, ChevronDown, Plus, Minus, Edit, Trash2, ArrowLeft, User, Settings, LogOut, RefreshCcw, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -29,12 +29,18 @@ const products = [
 export default function POSPage() {
   const { 
     t, language, setLanguage, isSidebarOpen, customers, inventory, addInvoice, addCustomer, updateProductStock, setCustomerBillFormat, customerBillFormat,
-    carts, setCarts, selectedCustomerIds, setSelectedCustomerIds, activeCustomerId, setActiveCustomerId
+    billingFeed, setBillingFeed, selectedCustomerIds, setSelectedCustomerIds, activeCustomerId, setActiveCustomerId, addNotification
   } = useLanguage();
   const router = useRouter();
   const [completeSaleModal, setCompleteSaleModal] = useState(false);
   const [payAllModal, setPayAllModal] = useState(false);
   const [addCustomerModal, setAddCustomerModal] = useState(false);
+  
+  // Admin Guard State
+  const [adminModalOpen, setAdminModalOpen] = useState(false);
+  const [adminPin, setAdminPin] = useState("");
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
   const [activeTab, setActiveTab] = useState("All");
   const [mobileTab, setMobileTab] = useState("products");
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
@@ -45,117 +51,213 @@ export default function POSPage() {
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const commissionRate = 8; // Fixed strictly at 8%
   
-  const activeCustomer = customers.find(c => c.id === activeCustomerId) || customers[0];
-  const activeCart = carts[activeCustomerId] || [];
+  const activeCustomer = customers.find(c => c.id === activeCustomerId) || { id: "", name: "No Customer Selected" };
+
+  // Helper for admin guard
+  const requireAdmin = (action: () => void, checkRestored: boolean = false) => {
+    // If the checkRestored flag is true, we verify if ANY item in billingFeed is restored.
+    const hasRestored = checkRestored ? billingFeed.some(item => item.isRestored) : false;
+    
+    if (hasRestored) {
+      setPendingAction(() => action);
+      setAdminModalOpen(true);
+    } else {
+      action();
+    }
+  };
+
+  const unlockAndExecuteAdminAction = () => {
+    if (adminPin === "1234") {
+      // Unlock session by removing isRestored flag from all items so subsequent actions don't need PIN
+      setBillingFeed(prev => prev.map(item => ({ ...item, isRestored: false })));
+      if (pendingAction) pendingAction();
+      setAdminModalOpen(false);
+      setAdminPin("");
+      setPendingAction(null);
+    } else {
+      alert("Invalid Admin PIN");
+    }
+  };
 
   const handleAddToCart = (product: any) => {
-    setCarts(prev => {
-      const cart = prev[activeCustomerId] || [];
-      const existing = cart.find(i => i.id === product.id);
-      if (existing) {
-        return prev; // Do not increment automatically
+    if (!activeCustomerId || activeCustomerId === "") return;
+    const actCust = customers.find(c => c.id === activeCustomerId);
+    if (!actCust) return;
+
+    const modifiesRestoredSession = billingFeed.some(i => i.customerId === activeCustomerId && i.isRestored);
+
+    requireAdmin(() => {
+      if (modifiesRestoredSession) {
+        addNotification({
+          title: "Restored Session Edited",
+          description: `Admin added new item ${product.name} to ${actCust.name}'s restored session.`,
+          type: "system"
+        });
       }
-      return {
+      setBillingFeed(prev => [
         ...prev,
-        [activeCustomerId]: [...cart, { id: product.id, name: product.name, price: product.price, qty: 1, total: product.price }]
-      };
-    });
+        {
+          id: `ITEM-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+          customerId: activeCustomerId,
+          customerName: actCust.name,
+          productId: product.id,
+          name: product.name,
+          price: product.price,
+          qty: 1,
+          total: product.price,
+          timestamp: Date.now(),
+          isRestored: modifiesRestoredSession
+        }
+      ]);
+    }, modifiesRestoredSession);
   };
 
   const handleQtyChange = (itemId: string, val: string) => {
-    setCarts(prev => {
-      const cart = prev[activeCustomerId] || [];
-      return {
-        ...prev,
-        [activeCustomerId]: cart.map(i => {
-          if (i.id !== itemId) return i;
-          if (val === '') return { ...i, qty: '', total: 0 };
-          const num = Number(val);
-          return { ...i, qty: num, total: num * i.price };
-        })
-      };
-    });
+    const item = billingFeed.find(i => i.id === itemId);
+    if (!item) return;
+
+    requireAdmin(() => {
+      if (item.isRestored) {
+        addNotification({
+          title: "Restored Session Edited",
+          description: `Admin edited quantity of ${item.name} for ${item.customerName}. New Qty: ${val}`,
+          type: "system"
+        });
+      }
+      setBillingFeed(prev => prev.map(i => {
+        if (i.id !== itemId) return i;
+        if (val === '') return { ...i, qty: '', total: 0 };
+        const num = Number(val);
+        return { ...i, qty: num, total: num * Number(i.price) };
+      }));
+    }, item.isRestored);
   };
 
   const handleQtyBlur = (itemId: string) => {
-    setCarts(prev => {
-      const cart = prev[activeCustomerId] || [];
-      return {
-        ...prev,
-        [activeCustomerId]: cart.map(i => {
-          if (i.id !== itemId) return i;
-          if (i.qty === '' || Number(i.qty) < 1) return { ...i, qty: 1, total: 1 * i.price };
-          return i;
-        })
-      };
-    });
+    setBillingFeed(prev => prev.map(i => {
+      if (i.id !== itemId) return i;
+      if (i.qty === '' || Number(i.qty) < 1) return { ...i, qty: 1, total: 1 * Number(i.price) };
+      return i;
+    }));
   };
 
   const handlePriceChange = (itemId: string, val: string) => {
-    setCarts(prev => {
-      const cart = prev[activeCustomerId] || [];
-      return {
-        ...prev,
-        [activeCustomerId]: cart.map(i => {
-          if (i.id !== itemId) return i;
-          if (val === '') return { ...i, price: '', total: 0 };
-          const num = Number(val);
-          return { ...i, price: num, total: Number(i.qty || 0) * num };
-        })
-      };
-    });
+    const item = billingFeed.find(i => i.id === itemId);
+    if (!item) return;
+
+    requireAdmin(() => {
+      setBillingFeed(prev => prev.map(i => {
+        if (i.id !== itemId) return i;
+        if (val === '') return { ...i, price: '', total: 0 };
+        const num = Number(val);
+        return { ...i, price: num, total: Number(i.qty || 0) * num };
+      }));
+    }, item.isRestored);
   };
 
   const handlePriceBlur = (itemId: string) => {
-    setCarts(prev => {
-      const cart = prev[activeCustomerId] || [];
-      return {
-        ...prev,
-        [activeCustomerId]: cart.map(i => {
-          if (i.id !== itemId) return i;
-          if (i.price === '' || Number(i.price) < 0) return { ...i, price: 0, total: 0 };
-          return i;
-        })
-      };
-    });
+    setBillingFeed(prev => prev.map(i => {
+      if (i.id !== itemId) return i;
+      if (i.price === '' || Number(i.price) < 0) return { ...i, price: 0, total: 0 };
+      return i;
+    }));
   };
 
   const handleRemoveItem = (itemId: string) => {
-    setCarts(prev => {
-      const cart = prev[activeCustomerId] || [];
-      return {
-        ...prev,
-        [activeCustomerId]: cart.filter(i => i.id !== itemId)
-      };
-    });
+    const item = billingFeed.find(i => i.id === itemId);
+    if (!item) return;
+    
+    requireAdmin(() => {
+      if (item.isRestored) {
+        addNotification({
+          title: "Restored Session Edited",
+          description: `Admin deleted item ${item.name} from ${item.customerName}'s restored session.`,
+          type: "system"
+        });
+      }
+      setBillingFeed(prev => prev.filter(i => i.id !== itemId));
+    }, item.isRestored);
   };
 
-  const subtotal = activeCart.reduce((sum, item) => sum + item.total, 0);
+  const handleRestoreSession = () => {
+    // Fetch today's invoices from all customers
+    const today = new Date().toISOString().split('T')[0];
+    const restoredItems: BillingFeedItem[] = [];
+    
+    customers.forEach(customer => {
+      const todayInvoices = customer.invoices?.filter(inv => inv.date.startsWith(today) && !inv.sessionClosed) || [];
+      todayInvoices.forEach(inv => {
+        inv.items.forEach((item: any) => {
+          restoredItems.push({
+            id: `RES-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            customerId: customer.id,
+            customerName: customer.name,
+            productId: item.productId || item.id, // accommodate older data formats
+            name: item.name,
+            price: item.price,
+            qty: item.qty,
+            total: item.total,
+            timestamp: Date.now(),
+            isRestored: true
+          });
+        });
+        
+        // Ensure customer is selected
+        if (!selectedCustomerIds.includes(customer.id)) {
+          setSelectedCustomerIds(prev => [...prev, customer.id]);
+        }
+      });
+    });
+
+    if (restoredItems.length > 0) {
+      setBillingFeed(prev => [...prev, ...restoredItems]);
+      alert(`Restored ${restoredItems.length} items from today's invoices.`);
+    } else {
+      alert("No invoices found for today to restore.");
+    }
+  };
+
+  const activeCustomerItems = billingFeed.filter(item => item.customerId === activeCustomerId);
+  const subtotal = activeCustomerItems.reduce((sum, item) => sum + item.total, 0);
   const commission = subtotal * (commissionRate / 100);
   const customerTotal = subtotal + commission;
 
-  const totalActiveSessions = Object.values(carts).filter(cart => cart.length > 0).length;
-  const combinedSubtotal = Object.values(carts).reduce((sum, cart) => sum + cart.reduce((s, i) => s + i.total, 0), 0);
+  const combinedSubtotal = billingFeed.reduce((sum, item) => sum + item.total, 0);
   const totalCommission = combinedSubtotal * (commissionRate / 100);
   const grandTotal = combinedSubtotal + totalCommission;
-  const totalItems = Object.values(carts).reduce((sum, cart) => sum + cart.reduce((s, i) => s + (Number(i.qty) || 0), 0), 0);
+  const totalItems = billingFeed.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
+
+  // Group items by customer for the right panel
+  const groupedSessions = customers.map(c => {
+    const items = billingFeed.filter(i => i.customerId === c.id);
+    return {
+      customer: c,
+      items,
+      subtotal: items.reduce((s, i) => s + i.total, 0),
+      commission: items.reduce((s, i) => s + i.total, 0) * (commissionRate / 100),
+      total: items.reduce((s, i) => s + i.total, 0) * (1 + commissionRate / 100)
+    };
+  }).filter(session => session.items.length > 0);
+
 
   const handlePrint = () => {
-    // Set print format class on body
     if (customerBillFormat === "thermal") {
       document.body.classList.add("print-thermal");
       document.body.classList.remove("print-simple");
     } else {
       document.body.classList.add("print-simple");
       document.body.classList.remove("print-thermal");
-    }window.print();
+    }
+    window.print();
   };
+
   const [newCustomerData, setNewCustomerData] = useState({ name: "", phone: "" });
 
   const handleAddCustomerSubmit = () => {
     if (!newCustomerData.name) return;
     const newId = `C-00${customers.length + 1}`;
     addCustomer({ id: newId, name: newCustomerData.name, phone: newCustomerData.phone, billed: 0, paid: 0, status: "Active" });
+    setSelectedCustomerIds(prev => [...prev, newId]);
     setActiveCustomerId(newId);
     setAddCustomerModal(false);
     setNewCustomerData({ name: "", phone: "" });
@@ -163,60 +265,65 @@ export default function POSPage() {
 
   const confirmDeleteSession = () => {
     if (!deleteSessionId) return;
-    setCarts(prev => {
-      const newCarts = { ...prev };
-      delete newCarts[deleteSessionId];
-      return newCarts;
-    });
-    setSelectedCustomerIds(prev => prev.filter(id => id !== deleteSessionId));
-    if (activeCustomerId === deleteSessionId) {
-      setActiveCustomerId(customers[0]?.id || "");
-    }
-    setDeleteSessionId(null);
+    
+    // Check if session has restored items
+    const hasRestored = billingFeed.some(i => i.customerId === deleteSessionId && i.isRestored);
+    
+    requireAdmin(() => {
+      setBillingFeed(prev => prev.filter(i => i.customerId !== deleteSessionId));
+      setSelectedCustomerIds(prev => prev.filter(id => id !== deleteSessionId));
+      if (activeCustomerId === deleteSessionId) {
+        setActiveCustomerId(customers[0]?.id || "");
+      }
+      setDeleteSessionId(null);
+    }, hasRestored);
   };
 
   const handleCompleteSale = () => {
-    if (activeCart.length > 0) {
-      const invoice = {
-        id: `INV-${Date.now().toString().slice(-4)}-${Math.floor(Math.random()*100)}`,
-        date: new Date().toISOString(),
-        totalAmount: customerTotal,
-        paidAmount: 0,
-        status: "Pending" as const,
-        items: activeCart
-      };
-      addInvoice(activeCustomerId, invoice);
-      
-      setCarts(prev => {
-        const newCarts = { ...prev };
-        newCarts[activeCustomerId] = [];
-        return newCarts;
-      });
-    }
-    setCompleteSaleModal(false);
-  };
-
-  const handleSaveAllInvoices = () => {
-    Object.entries(carts).forEach(([custId, cartItems]) => {
-      if (cartItems.length > 0) {
-        const cSub = cartItems.reduce((sum, item) => sum + item.total, 0);
-        const cTotal = cSub + (cSub * 0.08);
-        
+    requireAdmin(() => {
+      if (activeCustomerItems.length > 0) {
         const invoice = {
           id: `INV-${Date.now().toString().slice(-4)}-${Math.floor(Math.random()*100)}`,
           date: new Date().toISOString(),
-          totalAmount: cTotal,
+          totalAmount: customerTotal,
           paidAmount: 0,
           status: "Pending" as const,
-          items: cartItems
+          items: activeCustomerItems
         };
-        addInvoice(custId, invoice);
+        addInvoice(activeCustomerId, invoice);
+        
+        setBillingFeed(prev => prev.filter(i => i.customerId !== activeCustomerId));
       }
-    });
+      setCompleteSaleModal(false);
+    }, activeCustomerItems.some(i => i.isRestored));
+  };
 
-    setCarts({});
-    setSelectedCustomerIds([]);
-    setPayAllModal(false);
+  const handleSaveAllInvoices = () => {
+    requireAdmin(() => {
+      const customersWithItems = Array.from(new Set(billingFeed.map(i => i.customerId)));
+      
+      customersWithItems.forEach(custId => {
+        const cartItems = billingFeed.filter(i => i.customerId === custId);
+        if (cartItems.length > 0) {
+          const cSub = cartItems.reduce((sum, item) => sum + item.total, 0);
+          const cTotal = cSub + (cSub * (commissionRate / 100));
+          
+          const invoice = {
+            id: `INV-${Date.now().toString().slice(-4)}-${Math.floor(Math.random()*100)}`,
+            date: new Date().toISOString(),
+            totalAmount: cTotal,
+            paidAmount: 0,
+            status: "Pending" as const,
+            items: cartItems
+          };
+          addInvoice(custId, invoice);
+        }
+      });
+  
+      setBillingFeed([]);
+      setSelectedCustomerIds([]);
+      setPayAllModal(false);
+    }, billingFeed.some(i => i.isRestored));
   };
 
   return (
@@ -237,10 +344,13 @@ export default function POSPage() {
         </div>
         
         <div className="flex-1 max-w-md mx-8 relative hidden md:block">
-           {/* Search removed based on feedback */}
         </div>
 
         <div className="flex items-center gap-3 md:gap-6 ml-auto">
+          <Button onClick={handleRestoreSession} variant="outline" size="sm" className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white hidden md:flex h-9">
+            <RefreshCcw size={14} className="mr-2" />
+            Restore Session
+          </Button>
           <p suppressHydrationWarning className="text-xs md:text-sm text-slate-300">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-2 md:border-l md:border-white/20 md:pl-6 cursor-pointer focus:outline-none">
@@ -275,7 +385,7 @@ export default function POSPage() {
       {/* Mobile Tab Switchers */}
       <div className="md:hidden flex border-b border-slate-200 bg-white mb-4 rounded-xl shrink-0 overflow-hidden shadow-sm">
         <button onClick={() => setMobileTab("products")} className={`flex-1 py-3 text-sm font-medium transition-colors ${mobileTab === 'products' ? 'bg-[var(--color-aqua)]/10 text-[var(--color-aqua)] border-b-2 border-[var(--color-aqua)]' : 'text-slate-500 bg-white'}`}>Products</button>
-        <button onClick={() => setMobileTab("cart")} className={`flex-1 py-3 text-sm font-medium transition-colors ${mobileTab === 'cart' ? 'bg-[var(--color-aqua)]/10 text-[var(--color-aqua)] border-b-2 border-[var(--color-aqua)]' : 'text-slate-500 bg-white'}`}>Cart ({activeCart.length})</button>
+        <button onClick={() => setMobileTab("cart")} className={`flex-1 py-3 text-sm font-medium transition-colors ${mobileTab === 'cart' ? 'bg-[var(--color-aqua)]/10 text-[var(--color-aqua)] border-b-2 border-[var(--color-aqua)]' : 'text-slate-500 bg-white'}`}>Feed ({billingFeed.length})</button>
         <button onClick={() => setMobileTab("summary")} className={`flex-1 py-3 text-sm font-medium transition-colors ${mobileTab === 'summary' ? 'bg-[var(--color-aqua)]/10 text-[var(--color-aqua)] border-b-2 border-[var(--color-aqua)]' : 'text-slate-500 bg-white'}`}>Summary</button>
       </div>
 
@@ -321,11 +431,21 @@ export default function POSPage() {
                       setHighlightedIndex(prev => (prev > 0 ? prev - 1 : 0));
                     } else if (e.key === 'Enter') {
                       e.preventDefault();
-                      if (highlightedIndex >= 0 && matched[highlightedIndex]) {
+                      if (matched.length === 1) {
+                        const selected = matched[0];
+                        if (!selectedCustomerIds.includes(selected.id)) {
+                          setSelectedCustomerIds(prev => [...prev, selected.id]);
+                        }
+                        setActiveCustomerId(selected.id);
+                        setCustomerSearchTerm("");
+                        setCustomerDropdownOpen(false);
+                        setHighlightedIndex(-1);
+                      } else if (highlightedIndex >= 0 && matched[highlightedIndex]) {
                         const selected = matched[highlightedIndex];
                         if (!selectedCustomerIds.includes(selected.id)) {
                           setSelectedCustomerIds(prev => [...prev, selected.id]);
                         }
+                        setActiveCustomerId(selected.id);
                         setCustomerSearchTerm("");
                         setCustomerDropdownOpen(false);
                         setHighlightedIndex(-1);
@@ -349,6 +469,7 @@ export default function POSPage() {
                       className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${index === highlightedIndex ? 'bg-[var(--color-aqua)]/10 border-l-2 border-[var(--color-aqua)]' : 'hover:bg-[var(--color-aqua)]/5 border-l-2 border-transparent'}`} 
                       onClick={() => {
                         if (!selectedCustomerIds.includes(c.id)) setSelectedCustomerIds(prev => [...prev, c.id]);
+                        setActiveCustomerId(c.id);
                         setCustomerSearchTerm("");
                         setCustomerDropdownOpen(false);
                         setHighlightedIndex(-1);
@@ -363,35 +484,6 @@ export default function POSPage() {
                   {customers.filter(c => c.name.toLowerCase().includes(customerSearchTerm.toLowerCase()) || c.id.toLowerCase().includes(customerSearchTerm.toLowerCase())).length === 0 && (
                     <div className="p-3 text-center text-sm text-slate-500">No customers found.</div>
                   )}
-                </div>
-              )}
-            </div>
-            <div className="flex gap-2 w-full overflow-x-auto pb-2 custom-scrollbar mt-1">
-              {customers.filter(c => selectedCustomerIds.includes(c.id)).map(c => (
-                <div 
-                  key={c.id} 
-                  onClick={() => setActiveCustomerId(c.id)}
-                  className={`relative shrink-0 pl-3 pr-8 py-1.5 border rounded-lg cursor-pointer transition-colors whitespace-nowrap min-w-[110px] shadow-sm
-                  ${c.id === activeCustomerId ? 'border-[var(--color-aqua)] bg-[var(--color-aqua)]/5' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
-                >
-                  <p className={`text-xs font-bold ${c.id === activeCustomerId ? 'text-[var(--color-ocean-blue)]' : 'text-slate-700'}`}>{c.name}</p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">{c.id}</p>
-                  
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteSessionId(c.id);
-                    }}
-                    className={`absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors
-                    ${c.id === activeCustomerId ? 'text-[var(--color-ocean-blue)]' : 'text-slate-400 hover:text-slate-600'}`}
-                  >
-                    <Trash2 size={12} />
-                  </button>
-                </div>
-              ))}
-              {selectedCustomerIds.length === 0 && (
-                <div className="text-center w-full py-4 text-slate-400 text-sm border border-dashed border-slate-200 rounded-lg">
-                  No customers selected.
                 </div>
               )}
             </div>
@@ -424,7 +516,13 @@ export default function POSPage() {
 
             <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
               {products.filter(p => (activeTab === "All" || p.category === activeTab) && (p.name.toLowerCase().includes(productSearchTerm.toLowerCase()) || p.id.toLowerCase().includes(productSearchTerm.toLowerCase()))).map(p => (
-                <div key={p.id} onClick={() => handleAddToCart(p)} className="flex items-center gap-3 p-2 border border-slate-100 rounded-lg hover:border-[var(--color-aqua)]/50 cursor-pointer transition-colors group">
+                <div 
+                  key={p.id} 
+                  onClick={() => handleAddToCart(p)} 
+                  tabIndex={0}
+                  onKeyDown={(e) => { if(e.key === 'Enter') handleAddToCart(p); }}
+                  className="flex items-center gap-3 p-2 border border-slate-100 rounded-lg hover:border-[var(--color-aqua)]/50 cursor-pointer transition-colors group focus:outline-none focus:border-[var(--color-aqua)] focus:ring-1 focus:ring-[var(--color-aqua)]"
+                >
                   <img src={p.image} alt={p.name} className="w-12 h-12 rounded-md object-cover bg-slate-100" />
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-semibold text-slate-900 truncate">{p.name}</h3>
@@ -439,21 +537,19 @@ export default function POSPage() {
           </div>
         </div>
 
-        {/* Column 2: Active Billing Cart */}
+        {/* Column 2: Sequential Billing Feed */}
         <div className={`md:col-span-5 h-full bg-white rounded-xl shadow-sm border border-slate-200 flex-col shrink-0 p-4 md:p-6 max-w-full overflow-hidden ${mobileTab === 'cart' ? 'flex' : 'hidden md:flex'}`}>
           <div className="pb-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-slate-50/50 rounded-t-xl -mx-4 md:-mx-6 -mt-4 md:-mt-6 px-4 md:px-6 pt-4 md:pt-6">
             <div>
-              <p className="text-xs text-slate-500 font-medium">{t("billingTo")} / Cart <span className="font-bold text-slate-800">({activeCart.length} items)</span></p>
+              <p className="text-xs text-slate-500 font-medium">Sequential Billing Feed <span className="font-bold text-slate-800">({billingFeed.length} items)</span></p>
               <h2 className="font-bold text-slate-900 flex items-center gap-2">
-                {activeCustomer.name} <span className="text-xs font-normal text-slate-500 bg-white border px-1.5 py-0.5 rounded">({activeCustomer.id})</span>
+                Currently Active: {activeCustomer.name} <span className="text-xs font-normal text-slate-500 bg-white border px-1.5 py-0.5 rounded">({activeCustomer.id})</span>
               </h2>
             </div>
-            {/* Action buttons removed as requested */}
           </div>
 
-          <div className="flex-1 overflow-y-auto py-4 custom-scrollbar w-full max-h-[300px]">
+          <div className="flex-1 overflow-y-auto py-4 custom-scrollbar w-full max-h-[350px]">
             <div className="w-full max-w-full pb-2">
-              {/* Desktop Table */}
               <div className="hidden md:block overflow-x-auto w-full">
                 <table className="w-full text-sm min-w-[450px]">
                   <thead className="text-xs text-slate-500 border-b border-slate-100">
@@ -462,133 +558,159 @@ export default function POSPage() {
                       <th className="font-medium text-center pb-2 w-[15%]">QTY</th>
                       <th className="font-medium text-right pb-2 w-[20%]">PRICE</th>
                       <th className="font-medium text-right pb-2 px-2 w-[15%] whitespace-nowrap">
-                        COMMISSION (8%)
+                        COMM (8%)
                       </th>
                       <th className="font-medium text-right pb-2 w-[15%]">TOTAL</th>
                       <th className="font-medium text-right pb-2 w-8"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
-                    {activeCart.map(item => {
+                    {billingFeed.map((item, index) => {
+                      const prevItem = index > 0 ? billingFeed[index - 1] : null;
+                      const showHeader = !prevItem || prevItem.customerId !== item.customerId;
+                      
                       const lineComm = item.total * 0.08;
                       const grandPrice = item.total + lineComm;
+
                       return (
-                      <tr key={item.id} className="group">
-                        <td className="py-3">
-                          <p className="font-medium text-slate-900 truncate pr-2" title={item.name}>{item.name}</p>
-                        </td>
-                        <td className="py-3">
-                          <input 
-                            type="number" 
-                            min="1" 
-                            value={item.qty} 
-                            onChange={(e) => handleQtyChange(item.id, e.target.value)}
-                            onBlur={() => handleQtyBlur(item.id)}
-                            className="w-16 h-8 border border-slate-200 rounded-md text-center text-xs focus:outline-none focus:border-[var(--color-aqua)] mx-auto block [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          />
-                        </td>
-                        <td className="py-3">
-                          <div className="flex items-center justify-end">
-                            <span className="text-slate-500 text-xs mr-1">RS </span>
-                            <input 
-                              type="number" 
-                              min="0"
-                              step="0.01" 
-                              value={item.price} 
-                              onChange={(e) => handlePriceChange(item.id, e.target.value)}
-                              onBlur={() => handlePriceBlur(item.id)}
-                              className="w-16 h-8 border border-slate-200 rounded-md text-right text-xs px-1 focus:outline-none focus:border-[var(--color-aqua)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                            />
-                          </div>
-                        </td>
-                        <td className="py-3 text-right text-slate-500 text-xs">RS {lineComm.toFixed(2)}</td>
-                        <td className="py-3 text-right font-bold text-[var(--color-ocean-blue)]">RS {grandPrice.toFixed(2)}</td>
-                        <td className="py-3 text-right">
-                           <button onClick={() => handleRemoveItem(item.id)} className="text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
-                        </td>
+                        <React.Fragment key={item.id}>
+                          {showHeader && (
+                            <tr>
+                              <td colSpan={6} className="pt-4 pb-2">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-px bg-slate-200 flex-1"></div>
+                                  <span className="text-xs font-bold text-[var(--color-ocean-blue)] bg-[var(--color-aqua)]/10 px-2 py-1 rounded">
+                                    {item.customerName} ({item.customerId})
+                                  </span>
+                                  <div className="h-px bg-slate-200 flex-1"></div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                          <tr className={`group ${item.isRestored ? 'bg-orange-50' : ''}`}>
+                            <td className="py-3 flex flex-col justify-center">
+                              <p className="font-medium text-slate-900 truncate pr-2 flex items-center gap-1" title={item.name}>
+                                {item.isRestored && <Lock size={12} className="text-orange-500" />} {item.name}
+                              </p>
+                            </td>
+                            <td className="py-3">
+                              <input 
+                                type="number" 
+                                min="1" 
+                                value={item.qty} 
+                                onChange={(e) => handleQtyChange(item.id, e.target.value)}
+                                onBlur={() => handleQtyBlur(item.id)}
+                                className="w-16 h-8 border border-slate-200 rounded-md text-center text-xs focus:outline-none focus:border-[var(--color-aqua)] mx-auto block [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              />
+                            </td>
+                            <td className="py-3">
+                              <div className="flex items-center justify-end">
+                                <span className="text-slate-500 text-xs mr-1">RS </span>
+                                <input 
+                                  type="number" 
+                                  min="0"
+                                  step="0.01" 
+                                  value={item.price} 
+                                  onChange={(e) => handlePriceChange(item.id, e.target.value)}
+                                  onBlur={() => handlePriceBlur(item.id)}
+                                  className="w-16 h-8 border border-slate-200 rounded-md text-right text-xs px-1 focus:outline-none focus:border-[var(--color-aqua)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
+                              </div>
+                            </td>
+                            <td className="py-3 text-right text-slate-500 text-xs">RS {lineComm.toFixed(2)}</td>
+                            <td className="py-3 text-right font-bold text-[var(--color-ocean-blue)]">RS {grandPrice.toFixed(2)}</td>
+                            <td className="py-3 text-right">
+                               <button onClick={() => handleRemoveItem(item.id)} className="text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                            </td>
+                          </tr>
+                        </React.Fragment>
+                      );
+                    })}
+                    {billingFeed.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="py-8 text-center text-slate-400">Feed is empty. Add products to begin.</td>
                       </tr>
-                    )})}
+                    )}
                   </tbody>
                 </table>
               </div>
 
               {/* Mobile Card Layout */}
               <div className="md:hidden space-y-3">
-                {activeCart.map(item => {
+                {billingFeed.map((item, index) => {
+                  const prevItem = index > 0 ? billingFeed[index - 1] : null;
+                  const showHeader = !prevItem || prevItem.customerId !== item.customerId;
+                  
                   const lineComm = item.total * 0.08;
                   const grandPrice = item.total + lineComm;
+
                   return (
-                    <div key={item.id} className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm flex flex-col gap-3 relative">
-                      <div className="flex justify-between items-start gap-2 pr-6">
-                        <p className="font-bold text-slate-900 text-sm leading-tight">{item.name}</p>
-                        <button onClick={() => handleRemoveItem(item.id)} className="absolute top-3 right-3 text-slate-400 hover:text-red-500 transition-colors">
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                      
-                      <div className="grid grid-cols-4 gap-2 items-end">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[10px] text-slate-500 font-medium">QTY</span>
-                          <input 
-                            type="number" 
-                            min="1" 
-                            value={item.qty} 
-                            onChange={(e) => handleQtyChange(item.id, e.target.value)}
-                            onBlur={() => handleQtyBlur(item.id)}
-                            className="w-full h-8 border border-slate-200 rounded-md text-center text-xs focus:outline-none focus:border-[var(--color-aqua)] bg-slate-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          />
+                    <React.Fragment key={item.id}>
+                      {showHeader && (
+                        <div className="flex items-center gap-2 mt-4 mb-2">
+                          <div className="h-px bg-slate-200 flex-1"></div>
+                          <span className="text-[10px] font-bold text-[var(--color-ocean-blue)] bg-[var(--color-aqua)]/10 px-2 py-1 rounded">
+                            {item.customerName}
+                          </span>
+                          <div className="h-px bg-slate-200 flex-1"></div>
                         </div>
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[10px] text-slate-500 font-medium">PRICE</span>
-                          <div className="flex items-center relative">
-                            <span className="absolute left-2 text-slate-400 text-xs">RS </span>
+                      )}
+                      <div className={`border border-slate-200 rounded-lg p-3 shadow-sm flex flex-col gap-3 relative ${item.isRestored ? 'bg-orange-50' : 'bg-white'}`}>
+                        <div className="flex justify-between items-start gap-2 pr-6">
+                          <p className="font-bold text-slate-900 text-sm leading-tight flex items-center gap-1">
+                            {item.isRestored && <Lock size={12} className="text-orange-500" />} {item.name}
+                          </p>
+                          <button onClick={() => handleRemoveItem(item.id)} className="absolute top-3 right-3 text-slate-400 hover:text-red-500 transition-colors">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                        
+                        <div className="grid grid-cols-4 gap-2 items-end">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[10px] text-slate-500 font-medium">QTY</span>
                             <input 
                               type="number" 
-                              min="0"
-                              step="0.01" 
-                              value={item.price} 
-                              onChange={(e) => handlePriceChange(item.id, e.target.value)}
-                              onBlur={() => handlePriceBlur(item.id)}
-                              className="w-full h-8 pl-5 pr-1 border border-slate-200 rounded-md text-right text-xs focus:outline-none focus:border-[var(--color-aqua)] bg-slate-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              min="1" 
+                              value={item.qty} 
+                              onChange={(e) => handleQtyChange(item.id, e.target.value)}
+                              onBlur={() => handleQtyBlur(item.id)}
+                              className="w-full h-8 border border-slate-200 rounded-md text-center text-xs focus:outline-none focus:border-[var(--color-aqua)] bg-slate-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                           </div>
-                        </div>
-                        <div className="flex flex-col gap-1 text-right">
-                          <span className="text-[10px] text-slate-500 font-medium">COMM(8%)</span>
-                          <span className="text-xs font-semibold text-slate-600 h-8 flex items-center justify-end">RS {lineComm.toFixed(2)}</span>
-                        </div>
-                        <div className="flex flex-col gap-1 text-right">
-                          <span className="text-[10px] text-slate-500 font-medium">TOTAL</span>
-                          <span className="text-sm font-bold text-[var(--color-ocean-blue)] h-8 flex items-center justify-end">RS {grandPrice.toFixed(2)}</span>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[10px] text-slate-500 font-medium">PRICE</span>
+                            <div className="flex items-center relative">
+                              <span className="absolute left-2 text-slate-400 text-xs">RS </span>
+                              <input 
+                                type="number" 
+                                min="0"
+                                step="0.01" 
+                                value={item.price} 
+                                onChange={(e) => handlePriceChange(item.id, e.target.value)}
+                                onBlur={() => handlePriceBlur(item.id)}
+                                className="w-full h-8 pl-5 pr-1 border border-slate-200 rounded-md text-right text-xs focus:outline-none focus:border-[var(--color-aqua)] bg-slate-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-1 text-right">
+                            <span className="text-[10px] text-slate-500 font-medium">COMM(8%)</span>
+                            <span className="text-xs font-semibold text-slate-600 h-8 flex items-center justify-end">RS {lineComm.toFixed(2)}</span>
+                          </div>
+                          <div className="flex flex-col gap-1 text-right">
+                            <span className="text-[10px] text-slate-500 font-medium">TOTAL</span>
+                            <span className="text-sm font-bold text-[var(--color-ocean-blue)] h-8 flex items-center justify-end">RS {grandPrice.toFixed(2)}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    </React.Fragment>
                   );
                 })}
               </div>
             </div>
           </div>
-
-          <div className="border-t border-slate-100 shrink-0 pt-4 bg-slate-50/80 -mx-4 md:-mx-6 -mb-4 md:-mb-6 px-4 md:px-6 pb-4 md:pb-6 rounded-b-xl">
-            <div className="space-y-1 pb-3">
-              <div className="flex justify-between text-sm items-center py-1">
-                <span className="text-slate-500">Subtotal</span>
-                <span className="font-medium text-slate-900">RS {subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-lg font-bold pt-2 border-t border-slate-200 mt-2">
-                <span className="text-slate-900">Grand Total</span>
-                <span className="text-[var(--color-aqua)]">RS {customerTotal.toFixed(2)}</span>
-              </div>
-            </div>
-            <div className="flex justify-between gap-3 mt-4 w-full px-1">
-              <Button onClick={handlePrint} variant="outline" className="w-full h-12 text-[var(--color-aqua)] border-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/10 hover:text-[var(--color-aqua)] font-bold text-sm md:text-base shadow-sm min-w-0">
-                Print Bill
-              </Button>
-            </div>
-          </div>
         </div>
 
-        {/* Column 3: Active Sessions & Summary */}
+        {/* Column 3: Active Sessions Grouping */}
         <div className={`md:col-span-3 flex-col gap-3 shrink-0 max-w-full h-full min-h-0 relative overflow-y-auto hide-scrollbar ${mobileTab === 'summary' ? 'flex' : 'hidden md:flex'}`}>
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 min-h-0 flex flex-col">
              <div className="p-4 border-b border-slate-100 shrink-0">
@@ -604,30 +726,27 @@ export default function POSPage() {
                </div>
              </div>
              <div className="flex-1 p-2 space-y-2 overflow-y-auto custom-scrollbar">
-                {customers.filter(c => carts[c.id]?.length > 0 && selectedCustomerIds.includes(c.id) && (activeSessionSearchTerm === "" || c.name.toLowerCase().includes(activeSessionSearchTerm.toLowerCase()))).map(c => {
-                  const cart = carts[c.id];
-                  const cSub = cart.reduce((sum, item) => sum + item.total, 0);
-                  const cTotal = cSub + (cSub * 0.08);
-                  const isActive = c.id === activeCustomerId;
+                {groupedSessions.filter(s => activeSessionSearchTerm === "" || s.customer.name.toLowerCase().includes(activeSessionSearchTerm.toLowerCase())).map(session => {
+                  const isActive = session.customer.id === activeCustomerId;
                   
                   return (
                     <div 
-                      key={c.id} 
-                      onClick={() => setActiveCustomerId(c.id)}
+                      key={session.customer.id} 
+                      onClick={() => setActiveCustomerId(session.customer.id)}
                       className={`px-4 py-3 md:px-5 rounded-lg flex justify-between items-center w-full gap-4 cursor-pointer transition-colors border
                         ${isActive ? 'border-[var(--color-aqua)]/50 bg-[var(--color-aqua)]/5' : 'border-slate-100 hover:border-slate-200'}
                       `}
                     >
                       <div className="min-w-0 flex-1">
-                        <p className={`text-sm font-bold truncate ${isActive ? 'text-[var(--color-ocean-blue)]' : 'text-slate-700'}`}>{c.name}</p>
-                        <p className="text-xs text-slate-500">{cart.length} items</p>
+                        <p className={`text-sm font-bold truncate ${isActive ? 'text-[var(--color-ocean-blue)]' : 'text-slate-700'}`}>{session.customer.name}</p>
+                        <p className="text-xs text-slate-500">{session.items.length} items</p>
                       </div>
                       <div className="flex flex-col items-end text-xs shrink-0 pr-2">
                         <div className="flex items-center gap-2 mb-1">
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
-                              setDeleteSessionId(c.id);
+                              setDeleteSessionId(session.customer.id);
                             }} 
                             className="text-slate-300 hover:text-red-500 transition-colors bg-white/50 rounded-md p-1"
                             title="Delete Session"
@@ -635,13 +754,16 @@ export default function POSPage() {
                             <Trash2 size={14} />
                           </button>
                         </div>
-                        <span className="text-slate-500">Subtotal: RS {cSub.toFixed(2)}</span>
-                        <span className="text-slate-500">Comm (8%): RS {(cSub * 0.08).toFixed(2)}</span>
-                        <span className={`font-bold text-sm mt-1 ${isActive ? 'text-[var(--color-aqua)]' : 'text-slate-900'}`}>Total: RS {cTotal.toFixed(2)}</span>
+                        <span className="text-slate-500">Subtotal: RS {session.subtotal.toFixed(2)}</span>
+                        <span className="text-slate-500">Comm (8%): RS {session.commission.toFixed(2)}</span>
+                        <span className={`font-bold text-sm mt-1 ${isActive ? 'text-[var(--color-aqua)]' : 'text-slate-900'}`}>Total: RS {session.total.toFixed(2)}</span>
                       </div>
                     </div>
                   );
                 })}
+                {groupedSessions.length === 0 && (
+                  <p className="text-center text-slate-400 text-xs mt-4">No active sessions.</p>
+                )}
              </div>
           </div>
 
@@ -666,7 +788,7 @@ export default function POSPage() {
                 <span className="text-xs text-slate-400">Grand Total</span>
                 <span className="text-2xl md:text-3xl font-bold text-[var(--color-aqua)]">RS {grandTotal.toFixed(2)}</span>
               </div>
-              <Button onClick={() => setPayAllModal(true)} className="w-full mt-2 h-12 md:h-14 bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-base shadow-sm rounded-xl transition-all">
+              <Button onClick={() => setPayAllModal(true)} disabled={billingFeed.length === 0} className="w-full mt-2 h-12 md:h-14 bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-base shadow-sm rounded-xl transition-all">
                 Save Invoice
               </Button>
             </div>
@@ -675,6 +797,35 @@ export default function POSPage() {
       </div>
 
       {/* Modals */}
+
+      {/* Admin Guard Modal */}
+      <Dialog open={adminModalOpen} onOpenChange={setAdminModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl text-orange-600 flex items-center gap-2">
+              <Lock size={20} /> Admin Authorization Required
+            </DialogTitle>
+            <DialogDescription className="text-slate-700 mt-2">
+              You are attempting to modify a restored session. Please enter the Admin PIN to proceed. (Use: 1234)
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input 
+              type="password"
+              placeholder="Enter Admin PIN" 
+              value={adminPin}
+              onChange={(e) => setAdminPin(e.target.value)}
+              className="text-center tracking-widest text-lg"
+              maxLength={4}
+            />
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => { setAdminModalOpen(false); setPendingAction(null); }}>Cancel</Button>
+            <Button onClick={unlockAndExecuteAdminAction} className="bg-orange-600 hover:bg-orange-700 text-white">Unlock & Execute</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!deleteSessionId} onOpenChange={(open) => !open && setDeleteSessionId(null)}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -715,34 +866,16 @@ export default function POSPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={completeSaleModal} onOpenChange={setCompleteSaleModal}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="text-xl">Complete Sale?</DialogTitle>
-            <DialogDescription>
-              Completing sale for <strong className="text-slate-900">Ahmed Traders</strong> for <strong className="text-[var(--color-aqua)]">RS 163.08</strong>.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-slate-500">This action will update the inventory and record the transaction.</p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCompleteSaleModal(false)}>Cancel</Button>
-            <Button onClick={handleCompleteSale} className="bg-[var(--color-aqua)] hover:bg-[var(--color-aqua)]/90">Confirm Sale</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       <Dialog open={payAllModal} onOpenChange={setPayAllModal}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle className="text-xl">Save All Sales?</DialogTitle>
             <DialogDescription>
-              You are about to settle <strong className="text-slate-900">2 customer orders</strong> for a Grand Total of <strong className="text-orange-600">RS 266.76</strong>.
+              You are about to settle orders for <strong className="text-slate-900">{groupedSessions.length} customer(s)</strong> for a Grand Total of <strong className="text-orange-600">RS {grandTotal.toFixed(2)}</strong>.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <p className="text-sm text-slate-500">Ensure all payments have been received before proceeding.</p>
+            <p className="text-sm text-slate-500">This will save transactions to ledgers and clear the current feed.</p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPayAllModal(false)}>Cancel</Button>
@@ -774,11 +907,11 @@ export default function POSPage() {
             </tr>
           </thead>
           <tbody className="border-b border-gray-300">
-            {activeCart.map((item, i) => (
+            {activeCustomerItems.map((item, i) => (
               <tr key={i} className="border-b border-gray-100 last:border-0">
                 <td className="py-2">{item.name}</td>
                 <td className="py-2 text-center">{item.qty}</td>
-                <td className="py-2 text-right">RS {item.price.toFixed(2)}</td>
+                <td className="py-2 text-right">RS {Number(item.price).toFixed(2)}</td>
                 <td className="py-2 text-right">RS {item.total.toFixed(2)}</td>
               </tr>
             ))}

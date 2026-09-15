@@ -10,12 +10,13 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 
 export default function TodaysBillingPage() {
-  const { customers, selectedDate, addExpense, carts } = useLanguage();
+  const { customers, selectedDate, addExpense, settleDailySession, billingFeed } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
 
   // Modals
   const [expenseModalOpen, setExpenseModalOpen] = useState(false);
+  const [expenseConfirmationOpen, setExpenseConfirmationOpen] = useState(false);
   const [expenseCustomerId, setExpenseCustomerId] = useState<string | null>(null);
   const [expenseData, setExpenseData] = useState({ amount: "", description: "" });
 
@@ -30,8 +31,8 @@ export default function TodaysBillingPage() {
   };
 
   const todayCustomers = customers.filter(c => {
-    const hasTodayInvoice = c.invoices?.some(inv => isDateInRange(inv.date, selectedDate));
-    const hasActiveSession = carts[c.id] && carts[c.id].length > 0;
+    const hasTodayInvoice = c.invoices?.some(inv => isDateInRange(inv.date, selectedDate) && !inv.sessionClosed);
+    const hasActiveSession = billingFeed.some(item => item.customerId === c.id);
     const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.id.toLowerCase().includes(searchQuery.toLowerCase());
     return (hasTodayInvoice || hasActiveSession) && matchesSearch;
   });
@@ -49,9 +50,18 @@ export default function TodaysBillingPage() {
   const handleExpenseSubmit = () => {
     const amt = parseFloat(expenseData.amount);
     if (!expenseCustomerId || !amt || isNaN(amt) || amt <= 0) return;
+    setExpenseModalOpen(false);
+    setExpenseConfirmationOpen(true);
+  };
+
+  const confirmExpense = () => {
+    const amt = parseFloat(expenseData.amount);
+    if (!expenseCustomerId || !amt || isNaN(amt) || amt <= 0) return;
 
     addExpense(expenseCustomerId, amt, expenseData.description || "General Expense");
-    setExpenseModalOpen(false);
+    settleDailySession(expenseCustomerId);
+    
+    setExpenseConfirmationOpen(false);
     setExpenseData({ amount: "", description: "" });
     setExpenseCustomerId(null);
   };
@@ -220,7 +230,56 @@ export default function TodaysBillingPage() {
               disabled={!expenseData.amount || parseFloat(expenseData.amount) <= 0}
               className="bg-orange-500 hover:bg-orange-600 text-white font-semibold"
             >
-              Apply Expense
+              Continue
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Expense Confirmation Dialog */}
+      <Dialog open={expenseConfirmationOpen} onOpenChange={(open) => {
+        if (!open) {
+          setExpenseConfirmationOpen(false);
+        }
+      }}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl text-orange-600">Confirm Expense</DialogTitle>
+            <DialogDescription>
+              Please review the final totals before settling this session. Once OK is clicked, the session will be closed and removed from active billing.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            {(() => {
+              const expCustomer = customers.find(c => c.id === expenseCustomerId);
+              const purchasedProductsTotal = expCustomer?.invoices?.filter(inv => isDateInRange(inv.date, selectedDate)).reduce((sum, inv) => sum + inv.totalAmount, 0) || 0;
+              const expAmt = parseFloat(expenseData.amount) || 0;
+              const updatedGrandTotal = purchasedProductsTotal + expAmt;
+              return (
+                <div className="bg-slate-50 border border-slate-100 rounded-lg p-4 space-y-3">
+                  <div className="flex justify-between items-center text-slate-700">
+                    <span className="font-medium">Purchased Products Total:</span>
+                    <span className="font-semibold">RS {purchasedProductsTotal.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-orange-600">
+                    <span className="font-medium">Expense Added:</span>
+                    <span className="font-semibold">+ RS {expAmt.toLocaleString()}</span>
+                  </div>
+                  <div className="border-t border-slate-200 pt-3 flex justify-between items-center">
+                    <span className="font-bold text-slate-900">Updated Grand Total:</span>
+                    <span className="font-bold text-xl text-[var(--color-ocean-blue)]">RS {updatedGrandTotal.toLocaleString()}</span>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setExpenseConfirmationOpen(false); setExpenseModalOpen(true); }}>Edit</Button>
+            <Button 
+              onClick={confirmExpense}
+              className="bg-[var(--color-ocean-blue)] hover:bg-[var(--color-ocean-blue)]/90 text-white font-bold"
+            >
+              OK
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -43,7 +43,7 @@ export default function CustomerKhataReport() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-10">
+    <div className="space-y-6 w-full pb-10">
       {/* Header / Actions - Hidden in Print */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
         <div className="flex items-center gap-3">
@@ -163,8 +163,26 @@ export default function CustomerKhataReport() {
                          {entry.type}
                        </span>
                     </TableCell>
-                    <TableCell className="text-sm text-slate-700 max-w-xs truncate" title={entry.description}>
-                      {entry.description}
+                    <TableCell className="text-sm text-slate-700 max-w-xs" title={entry.description}>
+                      {isInvoice ? (
+                        <div className="flex flex-col gap-1 max-h-32 overflow-y-auto custom-scrollbar pr-2">
+                          {(() => {
+                            const inv = customer.invoices?.find((i:any) => i.id === entry.refNo);
+                            if (inv && inv.items && inv.items.length > 0) {
+                              return inv.items.map((item: any, idx: number) => (
+                                <div key={idx} className="flex items-center gap-2 text-xs">
+                                  <span className="font-semibold text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded">{item.qty}x</span>
+                                  <span className="truncate flex-1">{item.name}</span>
+                                  <span className="text-slate-500">@ RS {item.price}</span>
+                                </div>
+                              ));
+                            }
+                            return <span>{entry.description}</span>;
+                          })()}
+                        </div>
+                      ) : (
+                        <span className="truncate block">{entry.description}</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right font-medium text-slate-900">
                       {entry.debit > 0 ? entry.debit.toLocaleString() : '-'}
