@@ -2,12 +2,13 @@
 
 import { useLanguage } from "@/lib/LanguageContext";
 import { useParams, useRouter } from "next/navigation";
-import { Printer, ArrowLeft, Receipt, FileText } from "lucide-react";
+import { Printer, ArrowLeft, Receipt, FileText, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
+
 
 export default function CustomerKhataReport() {
   const { customers } = useLanguage();
@@ -18,6 +19,8 @@ export default function CustomerKhataReport() {
   const [previewInvoice, setPreviewInvoice] = useState<any | null>(null);
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const customer = customers.find(c => c.id === id);
 
@@ -26,26 +29,77 @@ export default function CustomerKhataReport() {
   }
 
   const filteredLedger = customer.ledger?.filter((entry: any) => {
-    if (!fromDate && !toDate) return true;
-    const entryDate = new Date(entry.date).toISOString().split('T')[0];
-    if (fromDate && toDate) return entryDate >= fromDate && entryDate <= toDate;
-    if (fromDate) return entryDate >= fromDate;
-    if (toDate) return entryDate <= toDate;
-    return true;
+    let dateMatch = true;
+    if (fromDate || toDate) {
+      const entryDate = new Date(entry.date).toISOString().split('T')[0];
+      if (fromDate && toDate) dateMatch = entryDate >= fromDate && entryDate <= toDate;
+      else if (fromDate) dateMatch = entryDate >= fromDate;
+      else if (toDate) dateMatch = entryDate <= toDate;
+    }
+    
+    let searchMatch = true;
+    if (searchTerm) {
+      const lowerSearch = searchTerm.toLowerCase();
+      searchMatch = (entry.description && entry.description.toLowerCase().includes(lowerSearch)) || 
+                    (entry.refNo && entry.refNo.toLowerCase().includes(lowerSearch));
+    }
+    
+    return dateMatch && searchMatch;
   }) || [];
 
   // Recalculate summary based on filtered ledger
   const filteredBilled = filteredLedger.reduce((sum, entry) => entry.type === "Sale Invoice" ? sum + entry.debit : sum, 0);
   const filteredPaid = filteredLedger.reduce((sum, entry) => entry.type === "Payment Recv" ? sum + entry.credit : sum, 0);
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    const element = document.getElementById('print-khata-area');
+    if (!element) return;
+    
+    setIsGenerating(true);
+    try {
+      const htmlToImage = await import('html-to-image');
+      
+      const jsPDFModule = await import('jspdf');
+      const jsPDF = jsPDFModule.default ? jsPDFModule.default : jsPDFModule.jsPDF;
+
+      // Temporarily override print styles that might mess up canvas rendering
+      element.style.padding = '20px';
+      
+      const imgData = await htmlToImage.toPng(element, { quality: 1.0, pixelRatio: 2 });
+      const rect = element.getBoundingClientRect();
+      
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      const imgHeight = (rect.height * pdfWidth) / rect.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+      heightLeft -= pdfHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+        heightLeft -= pdfHeight;
+      }
+      
+      pdf.save(`${customer.name.replace(/\s+/g, '_')}_Khata_Report.pdf`);
+    } catch (error) {
+      console.error("Error generating PDF, falling back to print:", error);
+      window.print();
+    } finally {
+      element.style.padding = '';
+      setIsGenerating(false);
+    }
   };
 
   return (
-    <div className="space-y-6 w-full pb-10">
+    <div className="w-full pb-10 -mt-6">
       {/* Header / Actions - Hidden in Print */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden mb-6 pt-6">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => router.back()} className="text-slate-500">
             <ArrowLeft size={20} />
@@ -55,13 +109,22 @@ export default function CustomerKhataReport() {
             <p className="text-sm text-slate-500">Detailed ledger report for {customer.name}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative">
+             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+             <Input 
+               placeholder="Search ref # or description..." 
+               value={searchTerm}
+               onChange={(e) => setSearchTerm(e.target.value)}
+               className="w-48 h-9 pl-8 text-sm"
+             />
+          </div>
           <div className="flex items-center gap-2">
             <Input 
               type="date" 
               value={fromDate} 
               onChange={(e) => setFromDate(e.target.value)} 
-              className="w-36 h-9 text-sm"
+              className="w-32 h-9 text-sm"
               title="From Date"
             />
             <span className="text-slate-400">to</span>
@@ -69,18 +132,18 @@ export default function CustomerKhataReport() {
               type="date" 
               value={toDate} 
               onChange={(e) => setToDate(e.target.value)} 
-              className="w-36 h-9 text-sm"
+              className="w-32 h-9 text-sm"
               title="To Date"
             />
           </div>
-          <Button onClick={handlePrint} className="bg-[var(--color-ocean-blue)] hover:bg-[var(--color-ocean-blue)]/90 text-white shadow-sm h-9">
-            <Printer size={16} className="mr-2" /> Generate PDF
+          <Button onClick={handlePrint} disabled={isGenerating} className="bg-[var(--color-ocean-blue)] hover:bg-[var(--color-ocean-blue)]/90 text-white shadow-sm h-9">
+            <Printer size={16} className="mr-2" /> {isGenerating ? 'Generating...' : 'Generate PDF'}
           </Button>
         </div>
       </div>
 
       {/* Printable Report Area */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden print:shadow-none print:border-none print:m-0 print:p-0">
+      <div id="print-khata-area" className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden print:shadow-none print:border-none print:m-0 print:p-0 print:overflow-visible">
         
         {/* Report Header */}
         <div className="p-6 border-b border-slate-100 bg-slate-50 print:bg-white print:border-b-2 print:border-slate-800">
@@ -130,7 +193,6 @@ export default function CustomerKhataReport() {
                 <TableHead className="font-bold text-slate-700">DESCRIPTION / ITEMS</TableHead>
                 <TableHead className="text-right font-bold text-slate-700 whitespace-nowrap">DEBIT (+)</TableHead>
                 <TableHead className="text-right font-bold text-slate-700 whitespace-nowrap">CREDIT (-)</TableHead>
-                <TableHead className="text-right font-bold text-slate-700 whitespace-nowrap">EXPENSE</TableHead>
                 <TableHead className="text-right font-bold text-slate-700 whitespace-nowrap">BALANCE</TableHead>
               </TableRow>
             </TableHeader>
@@ -185,13 +247,10 @@ export default function CustomerKhataReport() {
                       )}
                     </TableCell>
                     <TableCell className="text-right font-medium text-slate-900">
-                      {entry.debit > 0 ? entry.debit.toLocaleString() : '-'}
+                      {(entry.debit > 0 || entry.expense > 0) ? (entry.debit || entry.expense).toLocaleString() : '-'}
                     </TableCell>
                     <TableCell className="text-right font-medium text-green-600">
                       {entry.credit > 0 ? entry.credit.toLocaleString() : '-'}
-                    </TableCell>
-                    <TableCell className="text-right font-medium text-orange-600">
-                      {entry.expense > 0 ? entry.expense.toLocaleString() : '-'}
                     </TableCell>
                     <TableCell className="text-right font-bold text-slate-900 bg-slate-50/50">
                       {entry.balance.toLocaleString()}
@@ -200,7 +259,7 @@ export default function CustomerKhataReport() {
                 );
               })}
               {filteredLedger.length === 0 && (
-                <TableRow><TableCell colSpan={8} className="text-center h-32 text-slate-500">No transactions recorded yet.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center h-32 text-slate-500">No transactions recorded yet.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

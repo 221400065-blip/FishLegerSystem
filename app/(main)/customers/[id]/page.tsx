@@ -82,7 +82,7 @@ export default function CustomerLedgerPage({ params }: { params: Promise<{ id: s
       </div>
 
       {/* Stat Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="rounded-xl shadow-sm border-slate-200">
           <CardContent className="p-5 flex justify-between items-center">
             <div className="space-y-1">
@@ -118,18 +118,6 @@ export default function CustomerLedgerPage({ params }: { params: Promise<{ id: s
             </div>
           </CardContent>
         </Card>
-
-        <Card className="rounded-xl shadow-sm border-slate-200 bg-slate-50/50">
-          <CardContent className="p-5 flex justify-between items-center">
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-slate-500 uppercase">Allowed Credit Limit</p>
-              <h3 className="text-xl font-bold text-slate-700">RS {(customer.creditLimit || 50000).toLocaleString()}</h3>
-            </div>
-            <div className="w-10 h-10 bg-slate-200 text-slate-600 rounded-full flex items-center justify-center">
-              <CreditCard size={20} />
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Ledger Master Table */}
@@ -149,7 +137,6 @@ export default function CustomerLedgerPage({ params }: { params: Promise<{ id: s
                 <TableHead className="font-semibold text-slate-600">DESCRIPTION</TableHead>
                 <TableHead className="text-right font-semibold text-slate-600">DEBIT (+)</TableHead>
                 <TableHead className="text-right font-semibold text-slate-600">CREDIT (-)</TableHead>
-                <TableHead className="text-right font-semibold text-slate-600">EXPENSE</TableHead>
                 <TableHead className="text-right font-bold text-slate-900">BALANCE</TableHead>
               </TableRow>
             </TableHeader>
@@ -172,13 +159,10 @@ export default function CustomerLedgerPage({ params }: { params: Promise<{ id: s
                     </TableCell>
                     <TableCell className="text-slate-600">{entry.description}</TableCell>
                     <TableCell className="text-right font-medium text-slate-900">
-                      {entry.debit > 0 ? `RS ${entry.debit.toLocaleString()}` : '-'}
+                      {(entry.debit > 0 || entry.expense > 0) ? `RS ${(entry.debit || entry.expense).toLocaleString()}` : '-'}
                     </TableCell>
                     <TableCell className="text-right font-medium text-green-600">
                       {entry.credit > 0 ? `RS ${entry.credit.toLocaleString()}` : '-'}
-                    </TableCell>
-                    <TableCell className="text-right font-medium text-orange-600">
-                      {entry.expense > 0 ? `RS ${entry.expense.toLocaleString()}` : '-'}
                     </TableCell>
                     <TableCell className="text-right font-bold text-slate-900">
                       RS {entry.balance.toLocaleString()}

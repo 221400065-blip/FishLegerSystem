@@ -49,6 +49,8 @@ export default function POSPage() {
   const [productSearchTerm, setProductSearchTerm] = useState("");
   const [customerDropdownOpen, setCustomerDropdownOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [highlightedProductIndex, setHighlightedProductIndex] = useState(-1);
+  const [restoredSessionSnapshot, setRestoredSessionSnapshot] = useState<BillingFeedItem[]>([]);
   const commissionRate = 8; // Fixed strictly at 8%
   
   const activeCustomer = customers.find(c => c.id === activeCustomerId) || { id: "", name: "No Customer Selected" };
@@ -87,13 +89,6 @@ export default function POSPage() {
     const modifiesRestoredSession = billingFeed.some(i => i.customerId === activeCustomerId && i.isRestored);
 
     requireAdmin(() => {
-      if (modifiesRestoredSession) {
-        addNotification({
-          title: "Restored Session Edited",
-          description: `Admin added new item ${product.name} to ${actCust.name}'s restored session.`,
-          type: "system"
-        });
-      }
       setBillingFeed(prev => [
         ...prev,
         {
@@ -117,13 +112,6 @@ export default function POSPage() {
     if (!item) return;
 
     requireAdmin(() => {
-      if (item.isRestored) {
-        addNotification({
-          title: "Restored Session Edited",
-          description: `Admin edited quantity of ${item.name} for ${item.customerName}. New Qty: ${val}`,
-          type: "system"
-        });
-      }
       setBillingFeed(prev => prev.map(i => {
         if (i.id !== itemId) return i;
         if (val === '') return { ...i, qty: '', total: 0 };
@@ -168,13 +156,6 @@ export default function POSPage() {
     if (!item) return;
     
     requireAdmin(() => {
-      if (item.isRestored) {
-        addNotification({
-          title: "Restored Session Edited",
-          description: `Admin deleted item ${item.name} from ${item.customerName}'s restored session.`,
-          type: "system"
-        });
-      }
       setBillingFeed(prev => prev.filter(i => i.id !== itemId));
     }, item.isRestored);
   };
@@ -210,6 +191,7 @@ export default function POSPage() {
     });
 
     if (restoredItems.length > 0) {
+      setRestoredSessionSnapshot(prev => [...prev, ...restoredItems]);
       setBillingFeed(prev => [...prev, ...restoredItems]);
       alert(`Restored ${restoredItems.length} items from today's invoices.`);
     } else {
@@ -237,7 +219,7 @@ export default function POSPage() {
       commission: items.reduce((s, i) => s + i.total, 0) * (commissionRate / 100),
       total: items.reduce((s, i) => s + i.total, 0) * (1 + commissionRate / 100)
     };
-  }).filter(session => session.items.length > 0);
+  }).filter(session => session.items.length > 0 || session.customer.id === activeCustomerId || selectedCustomerIds.includes(session.customer.id));
 
 
   const handlePrint = () => {
@@ -292,7 +274,42 @@ export default function POSPage() {
         };
         addInvoice(activeCustomerId, invoice);
         
+        if (activeCustomerItems.some(i => i.isRestored)) {
+          const original = restoredSessionSnapshot.filter(i => i.customerId === activeCustomerId);
+          const origMap = new Map();
+          original.forEach(i => origMap.set(i.productId, (origMap.get(i.productId) || 0) + Number(i.qty)));
+          const curMap = new Map();
+          activeCustomerItems.forEach(i => {
+             curMap.set(i.productId, (curMap.get(i.productId) || 0) + Number(i.qty));
+             curMap.set(`${i.productId}_name`, i.name);
+          });
+          original.forEach(i => curMap.set(`${i.productId}_name`, i.name));
+          
+          const diffs: string[] = [];
+          const allProductIds = new Set([...origMap.keys(), ...curMap.keys()].filter(k => typeof k === 'string' && !k.endsWith('_name')));
+          allProductIds.forEach(pid => {
+            const oQty = origMap.get(pid) || 0;
+            const cQty = curMap.get(pid) || 0;
+            const name = curMap.get(`${pid}_name`);
+            if (cQty > oQty) diffs.push(`Added ${cQty - oQty}x ${name}`);
+            else if (cQty < oQty) diffs.push(`Removed ${oQty - cQty}x ${name}`);
+          });
+          
+          const diffText = diffs.length > 0 ? diffs.join(", ") : "No quantity changes";
+
+          addNotification({
+            title: "Restored Session Edited",
+            description: `Admin modified restored session for ${activeCustomer.name} (Invoice: ${invoice.id}). Changes: ${diffText}`,
+            type: "system"
+          });
+        }
+        
         setBillingFeed(prev => prev.filter(i => i.customerId !== activeCustomerId));
+        setRestoredSessionSnapshot(prev => prev.filter(i => i.customerId !== activeCustomerId));
+        setSelectedCustomerIds(prev => prev.filter(id => id !== activeCustomerId));
+        setActiveCustomerId("");
+        setProductSearchTerm("");
+        setCustomerSearchTerm("");
       }
       setCompleteSaleModal(false);
     }, activeCustomerItems.some(i => i.isRestored));
@@ -317,11 +334,43 @@ export default function POSPage() {
             items: cartItems
           };
           addInvoice(custId, invoice);
+          
+          if (cartItems.some(i => i.isRestored)) {
+            const original = restoredSessionSnapshot.filter(i => i.customerId === custId);
+            const origMap = new Map();
+            original.forEach(i => origMap.set(i.productId, (origMap.get(i.productId) || 0) + Number(i.qty)));
+            const curMap = new Map();
+            cartItems.forEach(i => {
+               curMap.set(i.productId, (curMap.get(i.productId) || 0) + Number(i.qty));
+               curMap.set(`${i.productId}_name`, i.name);
+            });
+            original.forEach(i => curMap.set(`${i.productId}_name`, i.name));
+            const diffs: string[] = [];
+            const allProductIds = new Set([...origMap.keys(), ...curMap.keys()].filter(k => typeof k === 'string' && !k.endsWith('_name')));
+            allProductIds.forEach(pid => {
+              const oQty = origMap.get(pid) || 0;
+              const cQty = curMap.get(pid) || 0;
+              const name = curMap.get(`${pid}_name`);
+              if (cQty > oQty) diffs.push(`Added ${cQty - oQty}x ${name}`);
+              else if (cQty < oQty) diffs.push(`Removed ${oQty - cQty}x ${name}`);
+            });
+            const diffText = diffs.length > 0 ? diffs.join(", ") : "No quantity changes";
+            const custName = customers.find(c => c.id === custId)?.name || custId;
+            addNotification({
+              title: "Restored Session Edited",
+              description: `Admin modified restored session for ${custName} (Invoice: ${invoice.id}). Changes: ${diffText}`,
+              type: "system"
+            });
+          }
         }
       });
   
       setBillingFeed([]);
       setSelectedCustomerIds([]);
+      setRestoredSessionSnapshot([]);
+      setActiveCustomerId("");
+      setProductSearchTerm("");
+      setCustomerSearchTerm("");
       setPayAllModal(false);
     }, billingFeed.some(i => i.isRestored));
   };
@@ -497,7 +546,31 @@ export default function POSPage() {
                  placeholder={t("searchProduct")} 
                  className="w-full h-9 pl-8 text-sm bg-slate-50" 
                  value={productSearchTerm}
-                 onChange={(e) => setProductSearchTerm(e.target.value)}
+                 onChange={(e) => {
+                   setProductSearchTerm(e.target.value);
+                   setHighlightedProductIndex(-1);
+                 }}
+                 onKeyDown={(e) => {
+                   const matched = products.filter(p => (activeTab === "All" || p.category === activeTab) && (p.name.toLowerCase().includes(productSearchTerm.toLowerCase()) || p.id.toLowerCase().includes(productSearchTerm.toLowerCase())));
+                   if (e.key === 'ArrowDown') {
+                     e.preventDefault();
+                     setHighlightedProductIndex(prev => (prev < matched.length - 1 ? prev + 1 : prev));
+                   } else if (e.key === 'ArrowUp') {
+                     e.preventDefault();
+                     setHighlightedProductIndex(prev => (prev > 0 ? prev - 1 : 0));
+                   } else if (e.key === 'Enter') {
+                     e.preventDefault();
+                     if (matched.length === 1) {
+                       handleAddToCart(matched[0]);
+                       setProductSearchTerm("");
+                       setHighlightedProductIndex(-1);
+                     } else if (highlightedProductIndex >= 0 && matched[highlightedProductIndex]) {
+                       handleAddToCart(matched[highlightedProductIndex]);
+                       setProductSearchTerm("");
+                       setHighlightedProductIndex(-1);
+                     }
+                   }
+                 }}
                />
             </div>
             
@@ -515,13 +588,13 @@ export default function POSPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-              {products.filter(p => (activeTab === "All" || p.category === activeTab) && (p.name.toLowerCase().includes(productSearchTerm.toLowerCase()) || p.id.toLowerCase().includes(productSearchTerm.toLowerCase()))).map(p => (
+              {products.filter(p => (activeTab === "All" || p.category === activeTab) && (p.name.toLowerCase().includes(productSearchTerm.toLowerCase()) || p.id.toLowerCase().includes(productSearchTerm.toLowerCase()))).map((p, index) => (
                 <div 
                   key={p.id} 
                   onClick={() => handleAddToCart(p)} 
                   tabIndex={0}
                   onKeyDown={(e) => { if(e.key === 'Enter') handleAddToCart(p); }}
-                  className="flex items-center gap-3 p-2 border border-slate-100 rounded-lg hover:border-[var(--color-aqua)]/50 cursor-pointer transition-colors group focus:outline-none focus:border-[var(--color-aqua)] focus:ring-1 focus:ring-[var(--color-aqua)]"
+                  className={`flex items-center gap-3 p-2 border rounded-lg cursor-pointer transition-colors group focus:outline-none focus:border-[var(--color-aqua)] focus:ring-1 focus:ring-[var(--color-aqua)] ${index === highlightedProductIndex ? 'border-[var(--color-aqua)] bg-[var(--color-aqua)]/5' : 'border-slate-100 hover:border-[var(--color-aqua)]/50'}`}
                 >
                   <img src={p.image} alt={p.name} className="w-12 h-12 rounded-md object-cover bg-slate-100" />
                   <div className="flex-1 min-w-0">

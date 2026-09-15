@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 
 export default function TodaysBillingPage() {
-  const { customers, selectedDate, addExpense, settleDailySession, billingFeed } = useLanguage();
+  const { customers, selectedDate, addExpense, settleDailySession, billingFeed, setBillingFeed, setSelectedCustomerIds } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
 
@@ -60,6 +60,10 @@ export default function TodaysBillingPage() {
 
     addExpense(expenseCustomerId, amt, expenseData.description || "General Expense");
     settleDailySession(expenseCustomerId);
+    
+    // Auto-remove from POS billing feed so they disappear from active lists
+    setBillingFeed(prev => prev.filter(i => i.customerId !== expenseCustomerId));
+    setSelectedCustomerIds(prev => prev.filter(id => id !== expenseCustomerId));
     
     setExpenseConfirmationOpen(false);
     setExpenseData({ amount: "", description: "" });

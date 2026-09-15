@@ -659,9 +659,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
           refNo: `EXP-${Date.now().toString().slice(-4)}`,
           type: "Expense Entry",
           description: description,
-          debit: 0,
+          debit: amount,
           credit: 0,
-          expense: amount,
+          expense: 0,
           balance: newBalance
         };
 

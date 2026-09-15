@@ -141,6 +141,12 @@ export function Navbar() {
     return `${d1} ➔ ${d2}`;
   };
 
+  const isKhataReport = pathname?.includes('/reports/customers/') && pathname.split('/').length > 3;
+
+  if (isKhataReport) {
+    return null;
+  }
+
   return (
     <header className="print:hidden h-auto min-h-[4rem] py-3 md:py-0 md:h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex flex-wrap md:flex-nowrap items-center justify-between px-4 md:px-8 w-full sticky top-0 z-40 gap-3 md:gap-6 transition-colors">
       <div className="flex items-center gap-4 w-auto shrink-0 justify-start order-1 md:order-1">

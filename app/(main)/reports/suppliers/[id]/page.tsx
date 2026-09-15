@@ -18,6 +18,7 @@ export default function SupplierKhataReport() {
   const [previewInvoice, setPreviewInvoice] = useState<any | null>(null);
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const supplier = suppliers.find(s => s.id === id);
 
@@ -38,8 +39,49 @@ export default function SupplierKhataReport() {
   const filteredPurchases = filteredLedger.reduce((sum, entry) => entry.type === "Purchase PO" ? sum + entry.credit : sum, 0);
   const filteredPaid = filteredLedger.reduce((sum, entry) => entry.type === "Payment Sent" ? sum + entry.debit : sum, 0);
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    const element = document.getElementById('print-khata-area');
+    if (!element) return;
+    
+    setIsGenerating(true);
+    try {
+      const htmlToImage = await import('html-to-image');
+      
+      const jsPDFModule = await import('jspdf');
+      const jsPDF = jsPDFModule.default ? jsPDFModule.default : jsPDFModule.jsPDF;
+
+      // Temporarily override print styles that might mess up canvas rendering
+      element.style.padding = '20px';
+      
+      const imgData = await htmlToImage.toPng(element, { quality: 1.0, pixelRatio: 2 });
+      const rect = element.getBoundingClientRect();
+      
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      const imgHeight = (rect.height * pdfWidth) / rect.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+      heightLeft -= pdfHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+        heightLeft -= pdfHeight;
+      }
+      
+      pdf.save(`${supplier.name.replace(/\s+/g, '_')}_Supplier_Ledger.pdf`);
+    } catch (error) {
+      console.error("Error generating PDF, falling back to print:", error);
+      window.print();
+    } finally {
+      element.style.padding = '';
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -73,14 +115,14 @@ export default function SupplierKhataReport() {
               title="To Date"
             />
           </div>
-          <Button onClick={handlePrint} className="bg-[var(--color-ocean-blue)] hover:bg-[var(--color-ocean-blue)]/90 text-white shadow-sm h-9">
-            <Printer size={16} className="mr-2" /> Generate PDF
+          <Button onClick={handlePrint} disabled={isGenerating} className="bg-[var(--color-ocean-blue)] hover:bg-[var(--color-ocean-blue)]/90 text-white shadow-sm h-9">
+            <Printer size={16} className="mr-2" /> {isGenerating ? 'Generating...' : 'Generate PDF'}
           </Button>
         </div>
       </div>
 
       {/* Printable Report Area */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden print:shadow-none print:border-none print:m-0 print:p-0">
+      <div id="print-khata-area" className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden print:shadow-none print:border-none print:m-0 print:p-0 print:overflow-visible print:w-full">
         
         {/* Report Header */}
         <div className="p-6 border-b border-slate-100 bg-slate-50 print:bg-white print:border-b-2 print:border-slate-800">
